@@ -8,8 +8,15 @@ const pagination = z.object({
   limit: z.coerce.number().int().positive().max(100).optional().default(10),
 });
 const idParam = z.object({ id });
+const jenisRapatValues = ['Paripurna', 'Komisi', 'Badan', 'Lainnya'];
+const subJenisBadanValues = ['Banggar', 'Badan Musyawarah', 'Badan Kehormatan', 'Bapemperda'];
+const jenisRapat = z.enum(['Paripurna', 'Komisi', 'Badan', 'Lainnya']);
+const subJenisBadan = z.enum(['Banggar', 'Badan Musyawarah', 'Badan Kehormatan', 'Bapemperda']);
 
 module.exports = {
+  jenisRapatValues,
+  subJenisBadanValues,
+  subJenisBadan,
   login: z.object({ email, password: z.string().min(1, 'Password wajib diisi') }),
   signup: z.object({ nama: z.string().trim().min(3).max(150), email, password }),
   forgot: z.object({ email }),
@@ -49,6 +56,8 @@ module.exports = {
   }),
   createRapat: z.object({
     judul: z.string().trim().min(3).max(200),
+    jenis_rapat: jenisRapat.default('Lainnya'),
+    sub_jenis: z.string().trim().max(100).optional(),
     tanggal: z.coerce.date(),
     waktu_mulai: z
       .string()
@@ -64,6 +73,8 @@ module.exports = {
   }),
   updateRapat: z.object({
     judul: z.string().trim().min(3).max(200).optional(),
+    jenis_rapat: jenisRapat.optional(),
+    sub_jenis: z.string().trim().max(100).optional().nullable(),
     tanggal: z.coerce.date().optional(),
     waktu_mulai: z
       .string()

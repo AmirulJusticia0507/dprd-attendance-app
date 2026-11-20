@@ -8,7 +8,7 @@ Backend REST API, portal web ringan, dan frontend PWA Next.js untuk sistem absen
 | --------------- | ----------------------------------------------------------------------------------------------- |
 | Lingkup         | Backend API, portal statis `/portal`, frontend PWA Next.js                                      |
 | Arsitektur      | Express 5, JavaScript CommonJS, REST API monolitik                                              |
-| Database        | PostgreSQL (`dprd_db`), migrasi SQL + seeder, 21 test (unit + integrasi)                        |
+| Database        | PostgreSQL (`dprd_db`), migrasi SQL + seeder, 22 test (unit + integrasi)                        |
 | Autentikasi     | Access token + refresh token berputar, logout/revocation, reset password via token sekali pakai |
 | Validasi        | Zod untuk body/query/params                                                                     |
 | Dokumentasi API | Swagger UI `/api-docs`, JSON `/api-docs.json`                                                   |
@@ -42,10 +42,11 @@ dprd-attendance-app/
     │   ├── migrations/002_refresh_tokens.sql
     │   ├── migrations/003_absensi_qr_tokens.sql
     │   ├── migrations/004_rapat_qr_tokens.sql
+    │   ├── migrations/005_rapat_jenis.sql
     │   └── seeds/anggota-2024-2029.js
     ├── middlewares/                 # auth, role
     ├── models/                      # db.js (Pool), queryHelpers.js
-    ├── public/                      # portal: index.html, app.js, styles.css, reset.html
+    ├── public/                      # portal: index.html, app.js, password-toggle.js, styles.css, reset.html
     ├── routes/                      # 8 router + anotasi Swagger
     ├── tests/                       # api.test.js, integration.test.js
     ├── swagger/swagger.js
@@ -129,6 +130,13 @@ Semua endpoint list mendukung `page` dan `limit`; anggota bisa difilter dengan `
 - **Admin**: statistik keseluruhan, komposisi fraksi, rekap teratas, dan absensi terbaru seluruh anggota.
 - **Anggota**: sapaan profil, statistik pribadi, rapat mendatang, riwayat kehadiran sendiri, dan shortcut scan. Menu admin disembunyikan dan route admin diblokir untuk role `anggota`, begitu juga sebaliknya.
 
+### Jenis rapat
+
+- Admin menentukanjenis rapat saat membuat agenda: **Paripurna**, **Komisi**, **Badan**, atau **Lainnya**.
+- Untuk **Badan**, admin wajib memilih salah satu: **Banggar**, **Badan Musyawarah**, **Badan Kehormatan**, atau **Bapemperda**.
+- Untuk **Komisi**, admin dapat mengisi detail bebas misalnya `Komisi I`.
+- Kolom `jenis_rapat` dan `sub_jenis` ikut tampil di tabel rapat, dashboard anggota, dan riwayat kehadiran.
+
 ## 6. Kesenjangan awal & status perbaikannya
 
 | #   | Kesenjangan awal                            | Status                                                           |
@@ -142,7 +150,7 @@ Semua endpoint list mendukung `page` dan `limit`; anggota bisa difilter dengan `
 | 7   | Email reset hanya `console.log`             | Nodemailer + `SMTP_*`; butuh kredensial SMTP nyata               |
 | 8   | Tanpa schema/migrasi/seeder                 | 5 file migrasi + seeder, `npm run db:setup`                      |
 | 9   | Tanpa validasi input                        | Zod + `validate()` pada semua route                              |
-| 10  | `npm test` placeholder                      | 21 test: Supertest + integrasi DB sementara                      |
+| 10  | `npm test` placeholder                      | 22 test: Supertest + integrasi DB sementara                      |
 | 11  | Tanpa lint/env example                      | ESLint + Prettier + TypeScript check + `.env.example`            |
 | 12  | Error membocorkan detail internal           | `AppError` + error handler terpusat                              |
 | 13  | CORS terbuka, tanpa helmet/rate limit       | `ALLOWED_ORIGINS`, Helmet, rate limit `/api/auth`                |
@@ -172,6 +180,6 @@ Perbaikan tambahan: portal web `/portal`, halaman reset `/portal/reset.html`, fr
 
 - `npm run db:setup` dan migrasi fresh DB → sukses, 50 anggota tersimpan.
 - `npm run lint` → 0 error; `npm run format:check` → bersih; `npm run typecheck` → 0 error.
-- `npm test` → 21/21 lulus (termasuk refresh token, CSV, portal, QR sekali pakai, check-in berbasis akun, dashboard per role, dan DB sementara).
+- `npm test` → 22/22 lulus (termasuk refresh token, CSV, portal, QR sekali pakai, check-in berbasis akun, dashboard per role, dan DB sementara).
 - `npm audit --omit=dev` → 0 vulnerability; `npm run build` frontend → sukses, termasuk route `/scan`.
 - Smoke API: `/`, `/api/health`, `/portal/`, login, rekap, Swagger JSON semuanya `200`.

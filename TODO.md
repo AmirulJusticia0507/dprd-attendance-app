@@ -21,10 +21,11 @@
 - [x] Halaman reset password `/portal/reset.html`.
 - [x] Rotasi `JWT_SECRET`, `JWT_REFRESH_SECRET`, dan password seed di `backend/.env` (lokal).
 - [x] Dockerfile, `docker-compose.yml`, GitHub Actions CI, Prettier, dan TypeScript `checkJs`.
-- [x] Verifikasi akhir: lint/format/typecheck 0 error, 21/21 test lulus, audit 0 vulnerability.
+- [x] Verifikasi akhir: lint/format/typecheck 0 error, 22/22 test lulus, audit 0 vulnerability.
 - [x] Frontend PWA Next.js: login, dashboard admin/anggota, absensi, rapat, rekap, riwayat, install prompt, service worker.
 - [x] Dashboard dan navigasi dipisah per role: admin melihat rekap global, anggota melihat ringkasan & riwayat pribadi.
 - [x] Endpoint `/api/dashboard/admin`, `/api/dashboard/anggota`, dan `/api/absensi/saya` dengan role guard.
+- [x] Jenis rapat Paripurna/Komisi/Badan/Lainnya + sub jenis Banggar, Badan Musyawarah, Badan Kehormatan, Bapemperda; form tambah rapat admin.
 - [x] CI job frontend (`npm ci` + `npm run build`) dan `.gitignore` artifact `.next`.
 - [x] Halaman `/scan` untuk anggota: login sekali, sesi tersimpan, kamera QR, auto check-in.
 - [x] Mode QR rapat bersama: identitas pembaca diambil dari JWT anggota, bukan dari QR.

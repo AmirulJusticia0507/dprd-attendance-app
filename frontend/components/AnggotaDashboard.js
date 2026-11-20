@@ -56,6 +56,10 @@ export default function AnggotaDashboard() {
               <article className="agenda-item" key={item.id}>
                 <div>
                   <strong>{item.judul}</strong>
+                  <span className="badge jenis">
+                    {item.jenis_rapat || 'Lainnya'}
+                    {item.sub_jenis ? ` · ${item.sub_jenis}` : ''}
+                  </span>
                   <span className="muted">
                     {item.tanggal} · {item.waktu_mulai || '-'}
                     {item.tempat ? ` · ${item.tempat}` : ''}
@@ -80,6 +84,16 @@ export default function AnggotaDashboard() {
         <DataTable
           columns={[
             { key: 'nama_rapat', label: 'Rapat' },
+            {
+              key: 'jenis_rapat',
+              label: 'Jenis',
+              render: (row) => (
+                <span className="badge jenis">
+                  {row.jenis_rapat || 'Lainnya'}
+                  {row.sub_jenis ? ` · ${row.sub_jenis}` : ''}
+                </span>
+              ),
+            },
             { key: 'tanggal', label: 'Tanggal' },
             { key: 'jam_masuk', label: 'Jam masuk' },
             {

@@ -25,6 +25,16 @@ export default function RiwayatPage() {
         <DataTable
           columns={[
             { key: 'nama_rapat', label: 'Rapat' },
+            {
+              key: 'jenis_rapat',
+              label: 'Jenis',
+              render: (row) => (
+                <span className="badge jenis">
+                  {row.jenis_rapat || 'Lainnya'}
+                  {row.sub_jenis ? ` · ${row.sub_jenis}` : ''}
+                </span>
+              ),
+            },
             { key: 'tanggal', label: 'Tanggal' },
             { key: 'tempat', label: 'Tempat' },
             { key: 'jam_masuk', label: 'Jam masuk' },

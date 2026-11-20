@@ -201,6 +201,56 @@ test('rekap CSV export returns downloadable content', async () => {
   assert.match(response.text, /anggota_id,nama,fraksi/);
 });
 
+test('jenis rapat Paripurna, Komisi, dan Badan tersimpan dengan validasi', async () => {
+  const paripurna = await request(app)
+    .post('/api/rapat')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ judul: 'Rapat Paripurna Test', tanggal: '2031-01-10', jenis_rapat: 'Paripurna' });
+  assert.equal(paripurna.status, 201);
+  assert.equal(paripurna.body.data.jenis_rapat, 'Paripurna');
+
+  const komisi = await request(app)
+    .post('/api/rapat')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({
+      judul: 'Rapat Komisi I Test',
+      tanggal: '2031-01-11',
+      jenis_rapat: 'Komisi',
+      sub_jenis: 'Komisi I',
+    });
+  assert.equal(komisi.status, 201);
+  assert.equal(komisi.body.data.sub_jenis, 'Komisi I');
+
+  const badan = await request(app)
+    .post('/api/rapat')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({
+      judul: 'Rapat Banggar Test',
+      tanggal: '2031-01-12',
+      jenis_rapat: 'Badan',
+      sub_jenis: 'Banggar',
+    });
+  assert.equal(badan.status, 201);
+  assert.equal(badan.body.data.sub_jenis, 'Banggar');
+
+  const invalid = await request(app)
+    .post('/api/rapat')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({
+      judul: 'Rapat Badan Invalid',
+      tanggal: '2031-01-13',
+      jenis_rapat: 'Badan',
+      sub_jenis: 'Komisi I',
+    });
+  assert.equal(invalid.status, 400);
+
+  const tanpaBadan = await request(app)
+    .post('/api/rapat')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ judul: 'Rapat Badan Tanpa Nama', tanggal: '2031-01-14', jenis_rapat: 'Badan' });
+  assert.equal(tanpaBadan.status, 400);
+});
+
 test('QR absensi generation is admin-only and check-in is single use', async () => {
   const rapat = await request(app)
     .post('/api/rapat')

@@ -76,12 +76,15 @@ router.post(
  *             required: [judul, tanggal]
  *             properties:
  *               judul: { type: string }
+ *               jenis_rapat: { type: string, enum: [Paripurna, Komisi, Badan, Lainnya], default: Lainnya }
+ *               sub_jenis: { type: string, example: "Banggar" }
  *               tanggal: { type: string, format: date }
  *               waktu_mulai: { type: string, example: "09:00" }
  *               waktu_selesai: { type: string, example: "11:00" }
  *               tempat: { type: string }
  *     responses:
  *       201: { description: Rapat berhasil ditambahkan }
+ *       400: { description: Validasi rapat gagal }
  */
 router.post('/', restrictTo('admin'), validate(schemas.createRapat), rapatController.createRapat);
 
@@ -101,12 +104,15 @@ router.post('/', restrictTo('admin'), validate(schemas.createRapat), rapatContro
  *             type: object
  *             properties:
  *               judul: { type: string }
+ *               jenis_rapat: { type: string, enum: [Paripurna, Komisi, Badan, Lainnya] }
+ *               sub_jenis: { type: string, nullable: true, example: "Banggar" }
  *               tanggal: { type: string, format: date }
  *               waktu_mulai: { type: string }
  *               waktu_selesai: { type: string }
  *               tempat: { type: string }
  *     responses:
  *       200: { description: Rapat berhasil diperbarui }
+ *       400: { description: Validasi rapat gagal }
  *       404: { description: Rapat tidak ditemukan }
  */
 router.put(

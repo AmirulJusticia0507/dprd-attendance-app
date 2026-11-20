@@ -35,7 +35,8 @@ exports.getAnggotaDashboard = asyncHandler(async (req, res) => {
 
   const recentResult = await query(
     `SELECT ab.id, ab.status, ab.jam_masuk, ab.keterangan,
-            r.id AS rapat_id, r.judul AS nama_rapat, r.tanggal, r.tempat
+            r.id AS rapat_id, r.judul AS nama_rapat, r.jenis_rapat, r.sub_jenis,
+            r.tanggal, r.tempat
      FROM absensi ab
      JOIN rapat r ON r.id = ab.rapat_id
      WHERE ab.anggota_id = $1
@@ -45,8 +46,8 @@ exports.getAnggotaDashboard = asyncHandler(async (req, res) => {
   );
 
   const upcomingResult = await query(
-    `SELECT r.id, r.judul, r.tanggal, r.waktu_mulai, r.waktu_selesai, r.tempat,
-            ab.status AS status_absensi
+    `SELECT r.id, r.judul, r.jenis_rapat, r.sub_jenis, r.tanggal,
+            r.waktu_mulai, r.waktu_selesai, r.tempat, ab.status AS status_absensi
      FROM rapat r
      LEFT JOIN absensi ab ON ab.rapat_id = r.id AND ab.anggota_id = $1
      WHERE r.tanggal >= CURRENT_DATE
@@ -77,7 +78,8 @@ exports.getAbsensiSaya = asyncHandler(async (req, res) => {
 
   const result = await query(
     `SELECT ab.id, ab.status, ab.jam_masuk, ab.keterangan,
-            r.id AS rapat_id, r.judul AS nama_rapat, r.tanggal, r.tempat
+            r.id AS rapat_id, r.judul AS nama_rapat, r.jenis_rapat, r.sub_jenis,
+            r.tanggal, r.tempat
      FROM absensi ab
      JOIN rapat r ON r.id = ab.rapat_id
      WHERE ab.anggota_id = $1
