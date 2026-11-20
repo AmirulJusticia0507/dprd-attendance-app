@@ -132,7 +132,7 @@ Semua endpoint list mendukung `page` dan `limit`; anggota bisa difilter dengan `
 
 ### Jenis rapat
 
-- Admin menentukanjenis rapat saat membuat agenda: **Paripurna**, **Komisi**, **Badan**, atau **Lainnya**.
+- Admin menentukan jenis rapat saat membuat agenda: **Paripurna**, **Komisi**, **Badan**, atau **Lainnya**.
 - Untuk **Badan**, admin wajib memilih salah satu: **Banggar**, **Badan Musyawarah**, **Badan Kehormatan**, atau **Bapemperda**.
 - Untuk **Komisi**, admin dapat mengisi detail bebas misalnya `Komisi I`.
 - Kolom `jenis_rapat` dan `sub_jenis` ikut tampil di tabel rapat, dashboard anggota, dan riwayat kehadiran.
