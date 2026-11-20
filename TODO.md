@@ -9,9 +9,12 @@
 - [x] CORS whitelist, Helmet, rate limit, dan graceful shutdown.
 - [x] Absensi sesuai schema DB + endpoint rekap.
 - [x] Swagger UI dan OpenAPI JSON (`/api-docs`, `/api-docs.json`).
-- [x] `.env.example`, `.gitignore`, ESLint, dan 9 test Supertest.
-- [x] Verifikasi: lint 0 error, test 9/9, audit 0 vulnerability, smoke API 200.
-- [x] Commit & push perbaikan ke `origin/main` (`6e554c4`).
+- [x] `.env.example`, `.gitignore`, ESLint, dan 13 test Supertest.
+- [x] Verifikasi: lint 0 error, test 13/13, audit 0 vulnerability, smoke API 200.
+- [x] Modul `periode` & `partisipasi` direfactor (Zod, pagination, role admin).
+- [x] Endpoint health check `GET /api/health`.
+- [x] Hapus `validateMiddleware.js` duplikat; `healthRoutes.js` di-mount di `app.js`.
+- [x] Commit & push perbaikan ke `origin/main` (`6e554c4`, `eda74cf`).
 
 ## Belum
 
@@ -33,7 +36,6 @@
 - [ ] Tambah GitHub Actions untuk `npm run lint`, `npm test`, dan `npm audit`.
 - [ ] Tambahkan typecheck/TypeScript dan formatter (Prettier).
 - [ ] Tambah test integrasi dengan database PostgreSQL sementara.
-- [ ] Putuskan nasib 2 file untracked lama: `backend/middlewares/validateMiddleware.js` dan `backend/routes/healthRoutes.js` (hapus atau integrasikan/mount route health).
 
 ## Referensi
 

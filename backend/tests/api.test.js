@@ -99,6 +99,40 @@ test('rekap absensi is available for seeded anggota', async () => {
   assert.ok(response.body.data.length > 0);
 });
 
+test('health check reports connected database', async () => {
+  const response = await request(app).get('/api/health');
+  assert.equal(response.status, 200);
+  assert.equal(response.body.status, 'UP');
+  assert.equal(response.body.database.status, 'CONNECTED');
+});
+
+test('admin can list periode and partisipasi with pagination metadata', async () => {
+  for (const path of ['/api/periode', '/api/partisipasi']) {
+    const response = await request(app)
+      .get(`${path}?page=1&limit=5`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(response.status, 200);
+    assert.equal(response.body.meta.limit, 5);
+    assert.ok(Array.isArray(response.body.data));
+  }
+});
+
+test('periode rejects invalid year range', async () => {
+  const response = await request(app)
+    .post('/api/periode')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ nama: 'Periode Invalid', tahun_mulai: 2029, tahun_berakhir: 2024 });
+  assert.equal(response.status, 400);
+});
+
+test('non-admin cannot create periode', async () => {
+  const response = await request(app)
+    .post('/api/periode')
+    .set('Authorization', `Bearer ${memberToken}`)
+    .send({ nama: 'Periode Test', tahun_mulai: 2024, tahun_berakhir: 2029 });
+  assert.equal(response.status, 403);
+});
+
 test('unknown route returns 404', async () => {
   const response = await request(app).get('/api/tidak-ada');
   assert.equal(response.status, 404);

@@ -30,7 +30,7 @@ dprd-attendance-app/
     │   └── seeds/anggota-2024-2029.js
     ├── middlewares/                 # auth, role
     ├── models/                      # db.js (Pool), queryHelpers.js
-    ├── routes/                      # 5 router + anotasi Swagger
+    ├── routes/                      # 8 router + anotasi Swagger
     ├── swagger/swagger.js
     ├── tests/api.test.js
     └── utils/                       # config, AppError, validate, schemas, emailSender, dll.
@@ -73,7 +73,9 @@ Pimpinan: Ketua `Y. Gustan Ganda, S.T.`; Wakil I `Ani Martanti, S.T.`; Wakil II 
 | Anggota | `GET/POST /api/anggota`, `GET/PUT/DELETE /api/anggota/:id` | JWT + admin |
 | Rapat | `GET/POST /api/rapat`, `GET/PUT/DELETE /api/rapat/:id` | JWT (mutasi: admin) |
 | Absensi | `GET/POST /api/absensi`, `GET /api/absensi/rekap` | JWT |
-| Sistem | `GET /`, `GET /api-docs`, `GET /api-docs.json` | Publik |
+| Periode | `GET/POST /api/periode`, `GET/PUT/DELETE /api/periode/:id` | JWT (mutasi: admin) |
+| Partisipasi | `GET/POST /api/partisipasi`, `GET/PUT/DELETE /api/partisipasi/:id` | JWT (mutasi: admin) |
+| Sistem | `GET /`, `GET /api/health`, `GET /api-docs`, `GET /api-docs.json` | Publik |
 
 Semua endpoint list mendukung `page` dan `limit`; anggota bisa difilter dengan `fraksi`, `periode_id`, `aktif`; absensi dengan `rapat_id`, `anggota_id`, `status`.
 
@@ -90,7 +92,7 @@ Semua endpoint list mendukung `page` dan `limit`; anggota bisa difilter dengan `
 | 7 | Email reset hanya `console.log` | Nodemailer + `SMTP_*`; jika belum dikonfigurasi, endpoint mengembalikan `503` |
 | 8 | Tanpa schema/migrasi/seeder | `database/migrations` + `database/seeds`, `npm run db:setup` |
 | 9 | Tanpa validasi input | Zod + `validate()` pada semua route |
-| 10 | `npm test` placeholder | 9 test otomatis (Node test runner + Supertest) |
+| 10 | `npm test` placeholder | 13 test otomatis (Node test runner + Supertest) |
 | 11 | Tanpa lint/env example | ESLint, `.env.example`, script `dev`/`migrate`/`seed` |
 | 12 | Error membocorkan `err.message` | `AppError` + error handler terpusat; 500 generik |
 | 13 | CORS terbuka, tanpa helmet/rate limit | `ALLOWED_ORIGINS`, Helmet, rate limit `/api/auth` |
@@ -108,7 +110,7 @@ Semua endpoint list mendukung `page` dan `limit`; anggota bisa difilter dengan `
 | 25 | Tanpa graceful shutdown | `SIGINT`/`SIGTERM` menutup server & pool |
 | 26 | Artefak debug/emoji/bahasa campur | Dibersihkan |
 
-Perbaikan tambahan: transaksi DB untuk update/reset password, audit `logs`, proteksi FK/unique, `npm audit` 0 vulnerability, dan Swagger JSON yang bisa diunduh.
+Perbaikan tambahan: transaksi DB untuk update/reset password, audit `logs`, proteksi FK/unique, modul `periode`/`partisipasi` mengikuti pola Zod+pagination+role admin, endpoint health check, `npm audit` 0 vulnerability, dan Swagger JSON yang bisa diunduh.
 
 ## 7. Sisa pekerjaan
 
@@ -123,6 +125,6 @@ Perbaikan tambahan: transaksi DB untuk update/reset password, audit `logs`, prot
 
 - `npm run db:setup` → migrasi sukses, 50 anggota tersimpan.
 - `npm run lint` → 0 error.
-- `npm test` → 9/9 lulus.
+- `npm test` → 13/13 lulus.
 - `npm audit --omit=dev` → 0 vulnerability.
-- Smoke test: `GET /`, login anggota, `GET /api/absensi/rekap`, dan Swagger JSON semuanya `200`.
+- Smoke test: `GET /`, `GET /api/health`, login anggota, `GET /api/absensi/rekap`, dan Swagger JSON semuanya `200`.
