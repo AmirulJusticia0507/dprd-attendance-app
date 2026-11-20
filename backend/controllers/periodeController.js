@@ -1,39 +1,30 @@
 const { query } = require('../models/queryHelpers');
+const asyncHandler = require('../utils/asyncHandler');
+const getPagination = require('../utils/pagination');
+const { notFound, conflict, badRequest } = require('../utils/AppError');
 
-// GET all periode
-exports.getAllPeriode = async (req, res) => {
-  try {
-    const result = await query('SELECT * FROM periode ORDER BY tahun_mulai DESC');
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error in getAllPeriode:', err);
-    res.status(500).json({ error: 'Gagal mengambil data periode' });
-  }
-};
+exports.getAllPeriode = asyncHandler(async (req, res) => {
+  const pagination = getPagination(req.validated.query);
+  const result = await query(
+    'SELECT * FROM periode ORDER BY tahun_mulai DESC LIMIT $1 OFFSET $2',
+    [pagination.limit, pagination.offset]
+  );
+  const count = await query('SELECT COUNT(*)::int AS total FROM periode');
+  res.json({ data: result.rows, meta: { ...pagination, total: count.rows[0].total } });
+});
 
-// GET periode by ID
-exports.getPeriodeById = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const result = await query('SELECT * FROM periode WHERE id = $1', [id]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Periode tidak ditemukan' });
-    }
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error in getPeriodeById:', err);
-    res.status(500).json({ error: 'Gagal mengambil detail periode' });
-  }
-};
+exports.getPeriodeById = asyncHandler(async (req, res) => {
+  const { id } = req.validated.params;
+  const result = await query('SELECT * FROM periode WHERE id = $1', [id]);
+  if (result.rowCount === 0) throw notFound('Periode tidak ditemukan');
+  res.json(result.rows[0]);
+});
 
-// CREATE periode (Admin only)
-exports.createPeriode = async (req, res) => {
+exports.createPeriode = asyncHandler(async (req, res) => {
   const { nama, tahun_mulai, tahun_berakhir } = req.body;
-
-  if (!nama || !tahun_mulai || !tahun_berakhir) {
-    return res.status(400).json({ error: 'Nama, tahun_mulai, dan tahun_berakhir wajib diisi' });
+  if (tahun_berakhir <= tahun_mulai) {
+    throw badRequest('tahun_berakhir harus lebih besar dari tahun_mulai');
   }
-
   try {
     const result = await query(
       'INSERT INTO periode (nama, tahun_mulai, tahun_berakhir) VALUES ($1, $2, $3) RETURNING *',
@@ -41,50 +32,38 @@ exports.createPeriode = async (req, res) => {
     );
     res.status(201).json({ message: 'Periode berhasil ditambahkan', data: result.rows[0] });
   } catch (err) {
-    console.error('Error in createPeriode:', err);
-    res.status(500).json({ error: 'Gagal menambahkan periode' });
+    if (err.code === '23505') throw conflict('Nama periode sudah ada');
+    throw err;
   }
-};
+});
 
-// UPDATE periode (Admin only)
-exports.updatePeriode = async (req, res) => {
-  const { id } = req.params;
-  const { nama, tahun_mulai, tahun_berakhir } = req.body;
-
+exports.updatePeriode = asyncHandler(async (req, res) => {
+  const { id } = req.validated.params;
+  const fields = req.body;
+  const keys = Object.keys(fields);
+  if (keys.length === 0) throw badRequest('Minimal satu field harus diisi');
+  const assignments = keys.map((key, index) => `${key} = $${index + 1}`).join(', ');
   try {
     const result = await query(
-      `UPDATE periode 
-       SET nama = COALESCE($1, nama), 
-           tahun_mulai = COALESCE($2, tahun_mulai), 
-           tahun_berakhir = COALESCE($3, tahun_berakhir) 
-       WHERE id = $4 
-       RETURNING *`,
-      [nama, tahun_mulai, tahun_berakhir, id]
+      `UPDATE periode SET ${assignments} WHERE id = $${keys.length + 1} RETURNING *`,
+      [...keys.map((key) => fields[key]), id]
     );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Periode tidak ditemukan' });
-    }
-
+    if (result.rowCount === 0) throw notFound('Periode tidak ditemukan');
     res.json({ message: 'Periode berhasil diperbarui', data: result.rows[0] });
   } catch (err) {
-    console.error('Error in updatePeriode:', err);
-    res.status(500).json({ error: 'Gagal memperbarui periode' });
+    if (err.code === '23505') throw conflict('Nama periode sudah ada');
+    throw err;
   }
-};
+});
 
-// DELETE periode (Admin only)
-exports.deletePeriode = async (req, res) => {
-  const { id } = req.params;
-
+exports.deletePeriode = asyncHandler(async (req, res) => {
+  const { id } = req.validated.params;
   try {
     const result = await query('DELETE FROM periode WHERE id = $1 RETURNING *', [id]);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Periode tidak ditemukan' });
-    }
+    if (result.rowCount === 0) throw notFound('Periode tidak ditemukan');
     res.json({ message: 'Periode berhasil dihapus' });
   } catch (err) {
-    console.error('Error in deletePeriode:', err);
-    res.status(500).json({ error: 'Gagal menghapus periode (mungkin masih terkait data anggota)' });
+    if (err.code === '23503') throw badRequest('Periode masih digunakan oleh anggota DPRD');
+    throw err;
   }
-};
+});

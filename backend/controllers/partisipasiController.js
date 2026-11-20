@@ -1,154 +1,77 @@
 const { query } = require('../models/queryHelpers');
+const asyncHandler = require('../utils/asyncHandler');
+const getPagination = require('../utils/pagination');
+const { notFound, badRequest } = require('../utils/AppError');
 
-// GET all partisipasi (with optional filters)
-exports.getPartisipasi = async (req, res) => {
-  const { rapat_id, anggota_id } = req.query;
+const columns = `
+  p.id, p.rapat_id, p.anggota_id, p.bicara, p.catatan,
+  r.judul AS judul_rapat, r.tanggal AS tanggal_rapat,
+  u.nama AS nama_anggota, a.fraksi, a.jabatan`;
 
-  try {
-    const result = await query(
-      `SELECT 
-        p.id,
-        p.rapat_id,
-        r.judul AS judul_rapat,
-        r.tanggal AS tanggal_rapat,
-        p.anggota_id,
-        u.nama AS nama_anggota,
-        a.fraksi,
-        a.jabatan,
-        p.bicara,
-        p.catatan
-      FROM partisipasi p
-      JOIN rapat r ON p.rapat_id = r.id
-      JOIN anggota_dprd a ON p.anggota_id = a.id
-      JOIN users u ON a.user_id = u.id
-      WHERE ($1::INT IS NULL OR p.rapat_id = $1)
-        AND ($2::INT IS NULL OR p.anggota_id = $2)
-      ORDER BY r.tanggal DESC, p.id ASC`,
-      [rapat_id || null, anggota_id || null]
-    );
+const joins = `
+  FROM partisipasi p
+  JOIN rapat r ON r.id = p.rapat_id
+  JOIN anggota_dprd a ON a.id = p.anggota_id
+  JOIN users u ON u.id = a.user_id`;
 
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error in getPartisipasi:', err);
-    res.status(500).json({ error: 'Gagal mengambil data partisipasi' });
-  }
-};
-
-// GET partisipasi by ID
-exports.getPartisipasiById = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const result = await query(
-      `SELECT 
-        p.id,
-        p.rapat_id,
-        r.judul AS judul_rapat,
-        r.tanggal AS tanggal_rapat,
-        p.anggota_id,
-        u.nama AS nama_anggota,
-        a.fraksi,
-        a.jabatan,
-        p.bicara,
-        p.catatan
-      FROM partisipasi p
-      JOIN rapat r ON p.rapat_id = r.id
-      JOIN anggota_dprd a ON p.anggota_id = a.id
-      JOIN users u ON a.user_id = u.id
-      WHERE p.id = $1`,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Data partisipasi tidak ditemukan' });
+exports.getPartisipasi = asyncHandler(async (req, res) => {
+  const pagination = getPagination(req.validated.query);
+  const filters = req.validated.query;
+  const conditions = [];
+  const params = [];
+  for (const field of ['rapat_id', 'anggota_id']) {
+    if (filters[field]) {
+      params.push(filters[field]);
+      conditions.push(`p.${field} = $${params.length}`);
     }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error in getPartisipasiById:', err);
-    res.status(500).json({ error: 'Gagal mengambil detail partisipasi' });
   }
-};
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const result = await query(
+    `SELECT ${columns} ${joins} ${where} ORDER BY r.tanggal DESC, p.id DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+    [...params, pagination.limit, pagination.offset]
+  );
+  const count = await query(`SELECT COUNT(*)::int AS total FROM partisipasi p ${where}`, params);
+  res.json({ data: result.rows, meta: { ...pagination, total: count.rows[0].total } });
+});
 
-// CREATE partisipasi
-exports.createPartisipasi = async (req, res) => {
-  const { rapat_id, bicara = false, catatan } = req.body;
-  let targetAnggotaId = req.body.anggota_id;
+exports.getPartisipasiById = asyncHandler(async (req, res) => {
+  const { id } = req.validated.params;
+  const result = await query(`SELECT ${columns} ${joins} WHERE p.id = $1`, [id]);
+  if (result.rowCount === 0) throw notFound('Data partisipasi tidak ditemukan');
+  res.json(result.rows[0]);
+});
 
-  if (!rapat_id) {
-    return res.status(400).json({ error: 'rapat_id wajib diisi' });
-  }
-
+exports.createPartisipasi = asyncHandler(async (req, res) => {
+  const { rapat_id, anggota_id, bicara = false, catatan } = req.body;
   try {
-    // 1. Validasi rapat
-    const rapatCheck = await query('SELECT id FROM rapat WHERE id = $1', [rapat_id]);
-    if (rapatCheck.rowCount === 0) {
-      return res.status(404).json({ error: 'Rapat tidak ditemukan' });
-    }
-
-    // 2. Anggota target
-    if (!targetAnggotaId || req.user.role !== 'admin') {
-      const anggotaRes = await query('SELECT id FROM anggota_dprd WHERE user_id = $1', [req.user.id]);
-      if (anggotaRes.rowCount === 0) {
-        return res.status(403).json({ error: 'Pengguna ini belum terdaftar sebagai anggota dewan' });
-      }
-      targetAnggotaId = anggotaRes.rows[0].id;
-    }
-
     const result = await query(
       'INSERT INTO partisipasi (rapat_id, anggota_id, bicara, catatan) VALUES ($1, $2, $3, $4) RETURNING *',
-      [rapat_id, targetAnggotaId, Boolean(bicara), catatan || null]
+      [rapat_id, anggota_id, Boolean(bicara), catatan || null]
     );
-
-    res.status(201).json({
-      message: 'Partisipasi berhasil dicatat',
-      data: result.rows[0],
-    });
+    res.status(201).json({ message: 'Partisipasi berhasil dicatat', data: result.rows[0] });
   } catch (err) {
-    console.error('Error in createPartisipasi:', err);
-    res.status(500).json({ error: 'Gagal mencatat partisipasi' });
+    if (err.code === '23503') throw badRequest('rapat_id atau anggota_id tidak valid');
+    throw err;
   }
-};
+});
 
-// UPDATE partisipasi
-exports.updatePartisipasi = async (req, res) => {
-  const { id } = req.params;
-  const { bicara, catatan } = req.body;
+exports.updatePartisipasi = asyncHandler(async (req, res) => {
+  const { id } = req.validated.params;
+  const fields = req.body;
+  const keys = Object.keys(fields);
+  if (keys.length === 0) throw badRequest('Minimal satu field harus diisi');
+  const assignments = keys.map((key, index) => `${key} = $${index + 1}`).join(', ');
+  const result = await query(
+    `UPDATE partisipasi SET ${assignments} WHERE id = $${keys.length + 1} RETURNING *`,
+    [...keys.map((key) => fields[key]), id]
+  );
+  if (result.rowCount === 0) throw notFound('Data partisipasi tidak ditemukan');
+  res.json({ message: 'Partisipasi berhasil diperbarui', data: result.rows[0] });
+});
 
-  try {
-    const result = await query(
-      `UPDATE partisipasi 
-       SET bicara = COALESCE($1, bicara), 
-           catatan = COALESCE($2, catatan) 
-       WHERE id = $3 
-       RETURNING *`,
-      [bicara !== undefined ? Boolean(bicara) : null, catatan, id]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Data partisipasi tidak ditemukan' });
-    }
-
-    res.json({ message: 'Data partisipasi berhasil diperbarui', data: result.rows[0] });
-  } catch (err) {
-    console.error('Error in updatePartisipasi:', err);
-    res.status(500).json({ error: 'Gagal memperbarui partisipasi' });
-  }
-};
-
-// DELETE partisipasi (Admin only)
-exports.deletePartisipasi = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const result = await query('DELETE FROM partisipasi WHERE id = $1 RETURNING *', [id]);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Data partisipasi tidak ditemukan' });
-    }
-
-    res.json({ message: 'Data partisipasi berhasil dihapus' });
-  } catch (err) {
-    console.error('Error in deletePartisipasi:', err);
-    res.status(500).json({ error: 'Gagal menghapus partisipasi' });
-  }
-};
+exports.deletePartisipasi = asyncHandler(async (req, res) => {
+  const { id } = req.validated.params;
+  const result = await query('DELETE FROM partisipasi WHERE id = $1 RETURNING *', [id]);
+  if (result.rowCount === 0) throw notFound('Data partisipasi tidak ditemukan');
+  res.json({ message: 'Partisipasi berhasil dihapus' });
+});

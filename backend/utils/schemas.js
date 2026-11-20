@@ -81,5 +81,29 @@ module.exports = {
     periode_id: z.coerce.number().int().positive().optional(),
     fraksi: z.string().trim().max(50).optional(),
   }),
+  createPeriode: z.object({
+    nama: z.string().trim().min(2).max(100),
+    tahun_mulai: z.coerce.number().int().min(2000).max(2100),
+    tahun_berakhir: z.coerce.number().int().min(2000).max(2100),
+  }),
+  updatePeriode: z.object({
+    nama: z.string().trim().min(2).max(100).optional(),
+    tahun_mulai: z.coerce.number().int().min(2000).max(2100).optional(),
+    tahun_berakhir: z.coerce.number().int().min(2000).max(2100).optional(),
+  }),
+  createPartisipasi: z.object({
+    rapat_id: id,
+    anggota_id: id,
+    bicara: z.boolean().optional().default(false),
+    catatan: z.string().trim().max(500).optional(),
+  }),
+  updatePartisipasi: z.object({
+    bicara: z.boolean().optional(),
+    catatan: z.string().trim().max(500).optional(),
+  }),
+  partisipasiFilter: pagination.extend({
+    rapat_id: z.coerce.number().int().positive().optional(),
+    anggota_id: z.coerce.number().int().positive().optional(),
+  }),
   idParam,
 };

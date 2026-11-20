@@ -12,6 +12,9 @@ const userRoutes = require('./routes/userRoutes');
 const absensiRoutes = require('./routes/absensiRoutes');
 const anggotaRoutes = require('./routes/anggotaRoutes');
 const rapatRoutes = require('./routes/rapatRoutes');
+const periodeRoutes = require('./routes/periodeRoutes');
+const partisipasiRoutes = require('./routes/partisipasiRoutes');
+const healthRoutes = require('./routes/healthRoutes');
 
 const app = express();
 
@@ -43,6 +46,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/absensi', absensiRoutes);
 app.use('/api/anggota', anggotaRoutes);
 app.use('/api/rapat', rapatRoutes);
+app.use('/api/periode', periodeRoutes);
+app.use('/api/partisipasi', partisipasiRoutes);
+app.use('/api/health', healthRoutes);
 app.get('/api-docs.json', (req, res) => res.json(swaggerSpec));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 

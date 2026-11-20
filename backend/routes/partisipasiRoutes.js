@@ -3,133 +3,97 @@ const router = express.Router();
 const partisipasiController = require('../controllers/partisipasiController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const { restrictTo } = require('../middlewares/roleMiddleware');
+const { validate } = require('../utils/validate');
+const schemas = require('../utils/schemas');
+
+router.use(authMiddleware);
 
 /**
  * @swagger
  * tags:
  *   name: Partisipasi
- *   description: Pencatatan keaktifan dan partisipasi bicara anggota dewan dalam rapat
+ *   description: Pencatatan keaktifan bicara anggota dewan dalam rapat
  */
 
 /**
  * @swagger
  * /api/partisipasi:
  *   get:
- *     summary: Ambil seluruh data partisipasi rapat
+ *     summary: Ambil data partisipasi rapat
  *     tags: [Partisipasi]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - in: query
- *         name: rapat_id
- *         schema:
- *           type: integer
- *         description: Filter berdasarkan ID rapat
- *       - in: query
- *         name: anggota_id
- *         schema:
- *           type: integer
- *         description: Filter berdasarkan ID anggota DPRD
+ *       - { in: query, name: rapat_id, schema: { type: integer } }
+ *       - { in: query, name: anggota_id, schema: { type: integer } }
+ *       - { in: query, name: page, schema: { type: integer, default: 1 } }
+ *       - { in: query, name: limit, schema: { type: integer, default: 10 } }
  *     responses:
- *       200:
- *         description: Daftar partisipasi berhasil diambil
+ *       200: { description: Daftar partisipasi }
  */
-router.get('/', authMiddleware, partisipasiController.getPartisipasi);
+router.get('/', validate(schemas.partisipasiFilter, 'query'), partisipasiController.getPartisipasi);
 
 /**
  * @swagger
  * /api/partisipasi/{id}:
  *   get:
- *     summary: Ambil detail partisipasi berdasarkan ID
+ *     summary: Detail partisipasi
  *     tags: [Partisipasi]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
  *     responses:
- *       200:
- *         description: Detail partisipasi ditemukan
- *       404:
- *         description: Data partisipasi tidak ditemukan
+ *       200: { description: Detail partisipasi }
+ *       404: { description: Tidak ditemukan }
  */
-router.get('/:id', authMiddleware, partisipasiController.getPartisipasiById);
+router.get('/:id', validate(schemas.idParam, 'params'), partisipasiController.getPartisipasiById);
 
 /**
  * @swagger
  * /api/partisipasi:
  *   post:
- *     summary: Catat partisipasi baru
+ *     summary: Catat partisipasi anggota dalam rapat (Admin Only)
  *     tags: [Partisipasi]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [rapat_id]
+ *             required: [rapat_id, anggota_id]
  *             properties:
- *               rapat_id:
- *                 type: integer
- *                 example: 1
- *               anggota_id:
- *                 type: integer
- *                 description: Opsional untuk admin menginput anggota tertentu
- *                 example: 1
- *               bicara:
- *                 type: boolean
- *                 default: false
- *                 example: true
- *               catatan:
- *                 type: string
- *                 example: Menyampaikan pandangan fraksi terkait anggaran pendidikan
+ *               rapat_id: { type: integer }
+ *               anggota_id: { type: integer }
+ *               bicara: { type: boolean, default: false }
+ *               catatan: { type: string }
  *     responses:
- *       201:
- *         description: Partisipasi berhasil dicatat
- *       400:
- *         description: Input tidak valid
- *       403:
- *         description: Bukan anggota dewan
+ *       201: { description: Partisipasi berhasil dicatat }
+ *       400: { description: Input tidak valid }
  */
-router.post('/', authMiddleware, partisipasiController.createPartisipasi);
+router.post('/', restrictTo('admin'), validate(schemas.createPartisipasi), partisipasiController.createPartisipasi);
 
 /**
  * @swagger
  * /api/partisipasi/{id}:
  *   put:
- *     summary: Update catatan partisipasi
+ *     summary: Perbarui catatan partisipasi (Admin Only)
  *     tags: [Partisipasi]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
  *     requestBody:
- *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
  *             properties:
- *               bicara:
- *                 type: boolean
- *               catatan:
- *                 type: string
+ *               bicara: { type: boolean }
+ *               catatan: { type: string }
  *     responses:
- *       200:
- *         description: Partisipasi berhasil diupdate
- *       404:
- *         description: Data tidak ditemukan
+ *       200: { description: Partisipasi diperbarui }
+ *       404: { description: Tidak ditemukan }
  */
-router.put('/:id', authMiddleware, partisipasiController.updatePartisipasi);
+router.put('/:id', restrictTo('admin'), validate(schemas.idParam, 'params'), validate(schemas.updatePartisipasi), partisipasiController.updatePartisipasi);
 
 /**
  * @swagger
@@ -137,22 +101,13 @@ router.put('/:id', authMiddleware, partisipasiController.updatePartisipasi);
  *   delete:
  *     summary: Hapus catatan partisipasi (Admin Only)
  *     tags: [Partisipasi]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
  *     responses:
- *       200:
- *         description: Catatan partisipasi berhasil dihapus
- *       403:
- *         description: Akses ditolak
- *       404:
- *         description: Data tidak ditemukan
+ *       200: { description: Partisipasi dihapus }
+ *       404: { description: Tidak ditemukan }
  */
-router.delete('/:id', authMiddleware, restrictTo('admin'), partisipasiController.deletePartisipasi);
+router.delete('/:id', restrictTo('admin'), validate(schemas.idParam, 'params'), partisipasiController.deletePartisipasi);
 
 module.exports = router;
