@@ -27,7 +27,11 @@ export default function LoginPage() {
       });
       if (!response.ok) throw new Error(await readError(response, 'Login gagal'));
       const data = await response.json();
-      setSession({ token: data.token, refreshToken: data.refreshToken, user: data.user });
+      setSession({
+        token: data.token,
+        refreshToken: data.refreshToken,
+        user: data.user,
+      });
       router.replace('/dashboard');
     } catch (err) {
       setError(err.message);
@@ -69,6 +73,9 @@ export default function LoginPage() {
           {loading ? 'Memproses...' : 'Masuk'}
         </button>
       </form>
+      <p className="scan-entry">
+        Anggota dewan? <a href="/scan">Scan QR untuk presensi</a>
+      </p>
     </section>
   );
 }

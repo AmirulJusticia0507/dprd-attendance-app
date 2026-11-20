@@ -20,7 +20,13 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
 }
 
 button,
@@ -404,7 +410,6 @@ tbody tr:hover {
   }
 }
 
-
 /* PWA Enhancements */
 .sidebar-footer {
   margin-top: auto;
@@ -463,8 +468,15 @@ tbody tr:hover {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
 }
 
 .pwa-install-toast {
@@ -485,8 +497,14 @@ tbody tr:hover {
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .pwa-toast-content {
@@ -537,4 +555,150 @@ tbody tr:hover {
 .btn-ghost:hover {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text);
+}
+
+.scan-page {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px 16px 40px;
+}
+
+.scan-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+}
+
+.scan-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.scan-header h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.scan-header p {
+  margin: 4px 0 0;
+}
+
+.qr-reader {
+  width: 100%;
+  min-height: 300px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #05070d;
+}
+
+.scan-status {
+  margin: 16px 0 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 14px;
+}
+
+.scan-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.scan-result span {
+  color: var(--muted);
+}
+
+.scan-result-success {
+  background: rgba(6, 214, 160, 0.12);
+  border: 1px solid rgba(6, 214, 160, 0.4);
+}
+
+.scan-result-error {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+}
+
+.scan-again {
+  width: 100%;
+  margin-top: 18px;
+}
+
+.scan-entry {
+  margin: 20px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.scan-entry a {
+  color: var(--primary-hover);
+  font-weight: 600;
+}
+
+.qr-panel {
+  margin-top: 24px;
+  padding: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.qr-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.qr-panel h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.qr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.qr-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px;
+  background: #ffffff;
+  border-radius: 12px;
+  color: #0a0f1e;
+  text-align: center;
+}
+
+.qr-item .muted {
+  color: #475569;
+}
+
+.qr-item img {
+  width: 140px;
+  height: 140px;
+}
+
+.qr-placeholder {
+  width: 140px;
+  height: 140px;
+  background: #e2e8f0;
+  border-radius: 8px;
 }

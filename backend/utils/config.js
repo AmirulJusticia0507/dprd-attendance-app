@@ -20,4 +20,5 @@ module.exports = {
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   resetTtlMinutes: Number(process.env.RESET_TTL_MINUTES) || 15,
+  qrTtlMinutes: Number(process.env.QR_TTL_MINUTES) || 60,
 };

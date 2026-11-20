@@ -21,7 +21,12 @@
 - [x] Halaman reset password `/portal/reset.html`.
 - [x] Rotasi `JWT_SECRET`, `JWT_REFRESH_SECRET`, dan password seed di `backend/.env` (lokal).
 - [x] Dockerfile, `docker-compose.yml`, GitHub Actions CI, Prettier, dan TypeScript `checkJs`.
-- [x] Verifikasi akhir: lint/format/typecheck 0 error, 18/18 test lulus, audit 0 vulnerability.
+- [x] Verifikasi akhir: lint/format/typecheck 0 error, 19/19 test lulus, audit 0 vulnerability.
+- [x] Frontend PWA Next.js: login, dashboard, absensi, rapat, rekap, anggota, install prompt, service worker.
+- [x] CI job frontend (`npm ci` + `npm run build`) dan `.gitignore` artifact `.next`.
+- [x] Halaman `/scan` untuk anggota: tanpa login, kamera QR, auto check-in.
+- [x] Presensi QR: token pribadi, SHA-256, TTL, sekali pakai, rate limit, generator admin-only.
+- [x] Akun admin lokal: `amirulputra0507@gmail.com`; password tersimpan di `backend/.env`.
 
 ## Belum
 
@@ -31,12 +36,12 @@
 
 ### Fitur lanjutan
 
-- [ ] Check-in/check-out, QR code, geolocation, upload lampiran, dan notifikasi.
+- [ ] Check-out, geolocation, upload lampiran, dan notifikasi.
 - [ ] Ekspor XLSX/PDF (CSV sudah tersedia).
 
 ### Deployment
 
-- [ ] Kelola secret/DB password di lingkungan produksimelalui secret manager masing-masing.
+- [ ] Kelola secret/DB password di lingkungan produksi melalui secret manager masing-masing.
 
 ## Referensi
 

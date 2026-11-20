@@ -88,6 +88,7 @@ module.exports = {
       .optional(),
     keterangan: z.string().trim().max(500).optional(),
   }),
+  checkInQr: z.object({ token: z.string().trim().min(20).max(200) }),
   pagination,
   paginationWithFilter: pagination.extend({
     fraksi: z.string().trim().max(50).optional(),

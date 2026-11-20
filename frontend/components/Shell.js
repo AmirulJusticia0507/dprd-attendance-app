@@ -25,6 +25,7 @@ export default function Shell({ children }) {
     const current = getSession();
     setSession(current);
     setReady(true);
+    if (pathname === '/scan') return;
     if (pathname === '/' && current) router.replace('/dashboard');
     if (pathname !== '/' && !current) router.replace('/');
   }, [pathname, router]);
@@ -67,7 +68,8 @@ export default function Shell({ children }) {
     router.replace('/');
   };
 
-  if (pathname === '/') return <main className="auth-page">{children}</main>;
+  if (pathname === '/' || pathname === '/scan')
+    return <main className="scan-page">{children}</main>;
   if (!ready || !session) return <div className="loading">Memuat sesi...</div>;
 
   return (

@@ -44,6 +44,13 @@
   ],
   "shortcuts": [
     {
+      "name": "Scan QR Presensi",
+      "short_name": "Scan QR",
+      "description": "Presensi anggota dewan hanya dengan scan QR",
+      "url": "/scan",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
       "name": "Presensi Rapat",
       "short_name": "Presensi",
       "description": "Catat kehadiran rapat dewan",

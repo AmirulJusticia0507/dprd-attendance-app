@@ -12,6 +12,9 @@ const memberEmail = 'test-member@example.test';
 const testPassword = 'TestPassword123!';
 let adminToken;
 let memberToken;
+let testAnggotaId;
+let testPeriodeId;
+let qrRapatId;
 
 before(async () => {
   const hash = await bcrypt.hash(testPassword, 10);
@@ -33,9 +36,28 @@ before(async () => {
     .send({ email: memberEmail, password: testPassword });
   adminToken = adminLogin.body.token;
   memberToken = memberLogin.body.token;
+
+  const periode = await pool.query(
+    `INSERT INTO periode (nama, tahun_mulai, tahun_berakhir)
+     VALUES ('Periode Test QR', 2030, 2035)
+     ON CONFLICT (nama) DO UPDATE SET tahun_mulai = EXCLUDED.tahun_mulai, tahun_berakhir = EXCLUDED.tahun_berakhir
+     RETURNING id`
+  );
+  testPeriodeId = periode.rows[0].id;
+  const memberUser = await pool.query('SELECT id FROM users WHERE email = $1', [memberEmail]);
+  const anggota = await pool.query(
+    `INSERT INTO anggota_dprd (user_id, periode_id, fraksi, aktif)
+     VALUES ($1, $2, 'Test Fraksi', true)
+     ON CONFLICT (user_id, periode_id) DO UPDATE SET aktif = true, fraksi = EXCLUDED.fraksi
+     RETURNING id`,
+    [memberUser.rows[0].id, testPeriodeId]
+  );
+  testAnggotaId = anggota.rows[0].id;
 });
 
 after(async () => {
+  if (qrRapatId) await pool.query('DELETE FROM rapat WHERE id = $1', [qrRapatId]);
+  if (testPeriodeId) await pool.query('DELETE FROM periode WHERE id = $1', [testPeriodeId]);
   await pool.query('DELETE FROM users WHERE email IN ($1, $2)', [adminEmail, memberEmail]);
   await pool.end();
 });
@@ -175,6 +197,42 @@ test('rekap CSV export returns downloadable content', async () => {
   assert.equal(response.status, 200);
   assert.match(response.headers['content-type'], /text\/csv/);
   assert.match(response.text, /anggota_id,nama,fraksi/);
+});
+
+test('QR absensi generation is admin-only and check-in is single use', async () => {
+  const rapat = await request(app)
+    .post('/api/rapat')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ judul: 'Rapat QR Test', tanggal: '2030-01-15', tempat: 'Ruang Rapat' });
+  assert.equal(rapat.status, 201);
+  qrRapatId = rapat.body.data.id;
+
+  const forbidden = await request(app)
+    .post(`/api/rapat/${qrRapatId}/absensi-qr`)
+    .set('Authorization', `Bearer ${memberToken}`)
+    .send({});
+  assert.equal(forbidden.status, 403);
+
+  const generated = await request(app)
+    .post(`/api/rapat/${qrRapatId}/absensi-qr`)
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({});
+  assert.equal(generated.status, 201);
+  const item = generated.body.data.tokens.find((entry) => entry.anggota_id === testAnggotaId);
+  assert.ok(item?.qrPayload.startsWith('DPRD-ABSEN:'));
+
+  const invalid = await request(app)
+    .post('/api/absensi/check-in')
+    .send({ token: 'bukan-token-qr' });
+  assert.equal(invalid.status, 400);
+
+  const checkIn = await request(app).post('/api/absensi/check-in').send({ token: item.qrPayload });
+  assert.equal(checkIn.status, 200);
+  assert.equal(checkIn.body.data.status, 'hadir');
+  assert.equal(checkIn.body.data.anggota.id, testAnggotaId);
+
+  const replay = await request(app).post('/api/absensi/check-in').send({ token: item.qrPayload });
+  assert.equal(replay.status, 409);
 });
 
 test('unknown route returns 404', async () => {

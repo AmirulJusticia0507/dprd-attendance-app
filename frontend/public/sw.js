@@ -1,6 +1,7 @@
-const CACHE_NAME = 'dprd-attendance-pwa-v1';
+const CACHE_NAME = 'dprd-attendance-pwa-v2';
 const STATIC_ASSETS = [
   '/',
+  '/scan',
   '/manifest.json',
   '/offline.html',
   '/favicon.ico',
@@ -50,7 +51,9 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request).catch(() => {
         return new Response(
-          JSON.stringify({ error: 'Jaringan offline. Silakan coba lagi setelah tersambung internet.' }),
+          JSON.stringify({
+            error: 'Jaringan offline. Silakan coba lagi setelah tersambung internet.',
+          }),
           {
             status: 503,
             headers: { 'Content-Type': 'application/json' },

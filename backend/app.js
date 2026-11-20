@@ -11,6 +11,7 @@ const { AppError } = require('./utils/AppError');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const absensiRoutes = require('./routes/absensiRoutes');
+const absensiQrRoutes = require('./routes/absensiQrRoutes');
 const anggotaRoutes = require('./routes/anggotaRoutes');
 const rapatRoutes = require('./routes/rapatRoutes');
 const periodeRoutes = require('./routes/periodeRoutes');
@@ -45,6 +46,7 @@ app.use(
   authRoutes
 );
 app.use('/api/users', userRoutes);
+app.use('/api/absensi', absensiQrRoutes);
 app.use('/api/absensi', absensiRoutes);
 app.use('/api/anggota', anggotaRoutes);
 app.use('/api/rapat', rapatRoutes);

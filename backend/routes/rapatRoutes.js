@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const rapatController = require('../controllers/rapatController');
+const absensiQrController = require('../controllers/absensiQrController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const { restrictTo } = require('../middlewares/roleMiddleware');
 const { validate } = require('../utils/validate');
@@ -44,6 +45,13 @@ router.get('/', validate(schemas.pagination, 'query'), rapatController.getAllRap
  *       404: { description: Rapat tidak ditemukan }
  */
 router.get('/:id', validate(schemas.idParam, 'params'), rapatController.getRapatById);
+
+router.post(
+  '/:id/absensi-qr',
+  restrictTo('admin'),
+  validate(schemas.idParam, 'params'),
+  absensiQrController.generateQrTokens
+);
 
 /**
  * @swagger
