@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import PasswordInput from '../../components/PasswordInput';
 import { API_URL, apiFetch, clearSession, getSession, setSession } from '../../lib/api';
 
 const QR_PREFIX = 'DPRD-ABSEN:';
@@ -194,12 +195,9 @@ export default function ScanPage() {
           </label>
           <label className="form-group">
             <span className="form-label">Password</span>
-            <input
-              className="form-input"
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
               required
             />
           </label>

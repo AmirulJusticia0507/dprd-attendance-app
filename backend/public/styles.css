@@ -133,6 +133,48 @@ tbody tr:hover {
   background: #f9fafb;
 }
 
+.password-field {
+  position: relative;
+  display: block;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: #6b7280;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.password-toggle:hover {
+  color: #1f2937;
+  background: #f3f4f6;
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 1px;
+}
+
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
 @media (max-width: 640px) {
   .toolbar {
     align-items: stretch;

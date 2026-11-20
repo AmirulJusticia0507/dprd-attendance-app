@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import PasswordInput from '../components/PasswordInput';
 import { API_URL, getSession, readError, setSession } from '../lib/api';
 
 export default function LoginPage() {
@@ -59,12 +60,9 @@ export default function LoginPage() {
         </label>
         <label className="form-group">
           <span className="form-label">Password</span>
-          <input
-            className="form-input"
-            type="password"
+          <PasswordInput
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            autoComplete="current-password"
             required
           />
         </label>
