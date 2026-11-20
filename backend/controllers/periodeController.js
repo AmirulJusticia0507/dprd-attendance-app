@@ -5,10 +5,10 @@ const { notFound, conflict, badRequest } = require('../utils/AppError');
 
 exports.getAllPeriode = asyncHandler(async (req, res) => {
   const pagination = getPagination(req.validated.query);
-  const result = await query(
-    'SELECT * FROM periode ORDER BY tahun_mulai DESC LIMIT $1 OFFSET $2',
-    [pagination.limit, pagination.offset]
-  );
+  const result = await query('SELECT * FROM periode ORDER BY tahun_mulai DESC LIMIT $1 OFFSET $2', [
+    pagination.limit,
+    pagination.offset,
+  ]);
   const count = await query('SELECT COUNT(*)::int AS total FROM periode');
   res.json({ data: result.rows, meta: { ...pagination, total: count.rows[0].total } });
 });

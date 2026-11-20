@@ -50,6 +50,26 @@ router.get('/rekap', validate(schemas.rekapFilter, 'query'), absensi.getRekap);
 
 /**
  * @swagger
+ * /api/absensi/rekap/csv:
+ *   get:
+ *     summary: Unduh rekap kehadiran sebagai CSV
+ *     tags: [Absensi]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: query, name: periode_id, schema: { type: integer } }
+ *       - { in: query, name: fraksi, schema: { type: string } }
+ *     responses:
+ *       200:
+ *         description: File CSV
+ *         content:
+ *           text/csv:
+ *             schema:
+ *               type: string
+ */
+router.get('/rekap/csv', validate(schemas.rekapFilter, 'query'), absensi.exportRekapCsv);
+
+/**
+ * @swagger
  * /api/absensi:
  *   post:
  *     summary: Tambah absensi anggota untuk suatu rapat
@@ -72,6 +92,11 @@ router.get('/rekap', validate(schemas.rekapFilter, 'query'), absensi.getRekap);
  *       201: { description: Absensi ditambahkan }
  *       409: { description: Absensi untuk rapat dan anggota ini sudah ada }
  */
-router.post('/', restrictTo('admin', 'anggota'), validate(schemas.createAbsensi), absensi.createAbsensi);
+router.post(
+  '/',
+  restrictTo('admin', 'anggota'),
+  validate(schemas.createAbsensi),
+  absensi.createAbsensi
+);
 
 module.exports = router;

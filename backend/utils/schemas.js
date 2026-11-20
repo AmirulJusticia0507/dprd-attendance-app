@@ -14,6 +14,8 @@ module.exports = {
   signup: z.object({ nama: z.string().trim().min(3).max(150), email, password }),
   forgot: z.object({ email }),
   reset: z.object({ token: z.string().min(20), newPassword: password }),
+  refresh: z.object({ refreshToken: z.string().min(20) }),
+  logout: z.object({ refreshToken: z.string().min(20).optional() }),
   createUser: z.object({
     nama: z.string().trim().min(3).max(150),
     email,
@@ -48,22 +50,42 @@ module.exports = {
   createRapat: z.object({
     judul: z.string().trim().min(3).max(200),
     tanggal: z.coerce.date(),
-    waktu_mulai: z.string().trim().regex(/^\d{2}:\d{2}$/).optional(),
-    waktu_selesai: z.string().trim().regex(/^\d{2}:\d{2}$/).optional(),
+    waktu_mulai: z
+      .string()
+      .trim()
+      .regex(/^\d{2}:\d{2}$/)
+      .optional(),
+    waktu_selesai: z
+      .string()
+      .trim()
+      .regex(/^\d{2}:\d{2}$/)
+      .optional(),
     tempat: z.string().trim().min(2).max(200).optional(),
   }),
   updateRapat: z.object({
     judul: z.string().trim().min(3).max(200).optional(),
     tanggal: z.coerce.date().optional(),
-    waktu_mulai: z.string().trim().regex(/^\d{2}:\d{2}$/).optional(),
-    waktu_selesai: z.string().trim().regex(/^\d{2}:\d{2}$/).optional(),
+    waktu_mulai: z
+      .string()
+      .trim()
+      .regex(/^\d{2}:\d{2}$/)
+      .optional(),
+    waktu_selesai: z
+      .string()
+      .trim()
+      .regex(/^\d{2}:\d{2}$/)
+      .optional(),
     tempat: z.string().trim().min(2).max(200).optional(),
   }),
   createAbsensi: z.object({
     rapat_id: id,
     anggota_id: id,
     status: z.enum(['hadir', 'izin', 'alpha']),
-    jam_masuk: z.string().trim().regex(/^\d{2}:\d{2}$/).optional(),
+    jam_masuk: z
+      .string()
+      .trim()
+      .regex(/^\d{2}:\d{2}$/)
+      .optional(),
     keterangan: z.string().trim().max(500).optional(),
   }),
   pagination,

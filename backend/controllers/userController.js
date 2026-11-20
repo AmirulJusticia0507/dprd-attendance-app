@@ -42,7 +42,9 @@ exports.updateUser = asyncHandler(async (req, res) => {
     const target = await client.query('SELECT id, role FROM users WHERE id = $1 FOR UPDATE', [id]);
     if (target.rowCount === 0) throw notFound('User tidak ditemukan');
     if (target.rows[0].role === 'admin' && role === 'anggota') {
-      const admins = await client.query("SELECT COUNT(*)::int AS total FROM users WHERE role = 'admin'");
+      const admins = await client.query(
+        "SELECT COUNT(*)::int AS total FROM users WHERE role = 'admin'"
+      );
       if (admins.rows[0].total <= 1) throw badRequest('Tidak dapat menurunkan admin terakhir');
     }
     try {
@@ -67,7 +69,9 @@ exports.deleteUser = asyncHandler(async (req, res) => {
     const target = await client.query('SELECT id, role FROM users WHERE id = $1 FOR UPDATE', [id]);
     if (target.rowCount === 0) throw notFound('User tidak ditemukan');
     if (target.rows[0].role === 'admin') {
-      const admins = await client.query("SELECT COUNT(*)::int AS total FROM users WHERE role = 'admin'");
+      const admins = await client.query(
+        "SELECT COUNT(*)::int AS total FROM users WHERE role = 'admin'"
+      );
       if (admins.rows[0].total <= 1) throw badRequest('Tidak dapat menghapus admin terakhir');
     }
     await client.query('DELETE FROM users WHERE id = $1', [id]);

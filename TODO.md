@@ -9,33 +9,34 @@
 - [x] CORS whitelist, Helmet, rate limit, dan graceful shutdown.
 - [x] Absensi sesuai schema DB + endpoint rekap.
 - [x] Swagger UI dan OpenAPI JSON (`/api-docs`, `/api-docs.json`).
-- [x] `.env.example`, `.gitignore`, ESLint, dan 13 test Supertest.
-- [x] Verifikasi: lint 0 error, test 13/13, audit 0 vulnerability, smoke API 200.
+- [x] `.env.example`, `.gitignore`, ESLint, dan test Supertest.
 - [x] Modul `periode` & `partisipasi` direfactor (Zod, pagination, role admin).
 - [x] Endpoint health check `GET /api/health`.
 - [x] Hapus `validateMiddleware.js` duplikat; `healthRoutes.js` di-mount di `app.js`.
-- [x] Commit & push perbaikan ke `origin/main` (`6e554c4`, `eda74cf`).
+- [x] Commit & push perbaikan awal ke `origin/main` (`6e554c4`, `eda74cf`, `16e6c56`, `bc6cf66`).
+- [x] Refresh token berputar + logout/revocation + tabel `refresh_tokens`.
+- [x] Ekspor rekap absensi ke CSV (`GET /api/absensi/rekap/csv`).
+- [x] Migrasi fresh DB (`000_create_schema.sql`) + test integrasi DB sementara.
+- [x] Portal web minimal `/portal` (login, rekap, absensi, filter, CSV, logout, auto-refresh).
+- [x] Halaman reset password `/portal/reset.html`.
+- [x] Rotasi `JWT_SECRET`, `JWT_REFRESH_SECRET`, dan password seed di `backend/.env` (lokal).
+- [x] Dockerfile, `docker-compose.yml`, GitHub Actions CI, Prettier, dan TypeScript `checkJs`.
+- [x] Verifikasi akhir: lint/format/typecheck 0 error, 18/18 test lulus, audit 0 vulnerability.
 
 ## Belum
 
-### Prioritas tinggi
+### Perlu kredensial eksternal
 
-- [ ] Konfigurasi SMTP nyata agar `POST /api/auth/forgot` bisa mengirim email; saat ini sengaja mengembalikan `503` bila `SMTP_HOST` kosong (`backend/utils/emailSender.js`, `backend/controllers/authController.js`).
-- [ ] Rotasi `JWT_SECRET`, kredensial PostgreSQL, dan password seed `Sleman2024!` sebelum dipakai di lingkungan publik (`backend/.env`, `backend/database/seeds/anggota-2024-2029.js`).
-- [ ] Bangun frontend/portal untuk login, pencatatan absensi, dan rekap kehadiran.
+- [ ] Konfigurasi SMTP nyata agar `POST /api/auth/forgot` bisa mengirim email; saat ini sengaja mengembalikan `503` bila `SMTP_HOST` kosong (`backend/utils/emailSender.js`).
 
-### Fitur backend lanjutan
+### Fitur lanjutan
 
-- [ ] Tambah logout, refresh token, dan revocation/session (mis. Redis atau tabel session).
-- [ ] Tambah check-in/check-out, QR code, geolocation, upload lampiran, dan notifikasi.
-- [ ] Tambah ekspor laporan rekap ke CSV/XLSX/PDF.
+- [ ] Check-in/check-out, QR code, geolocation, upload lampiran, dan notifikasi.
+- [ ] Ekspor XLSX/PDF (CSV sudah tersedia).
 
-### Kualitas & infrastruktur
+### Deployment
 
-- [ ] Tambah `Dockerfile` dan `docker-compose.yml` untuk backend + PostgreSQL.
-- [ ] Tambah GitHub Actions untuk `npm run lint`, `npm test`, dan `npm audit`.
-- [ ] Tambahkan typecheck/TypeScript dan formatter (Prettier).
-- [ ] Tambah test integrasi dengan database PostgreSQL sementara.
+- [ ] Kelola secret/DB password di lingkungan produksimelalui secret manager masing-masing.
 
 ## Referensi
 

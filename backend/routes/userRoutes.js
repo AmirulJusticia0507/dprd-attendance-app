@@ -79,7 +79,12 @@ router.post('/', validate(schemas.createUser), user.createUser);
  *       200: { description: Pengguna berhasil diperbarui }
  *       404: { description: Pengguna tidak ditemukan }
  */
-router.put('/:id', validate(schemas.idParam, 'params'), validate(schemas.updateUser), user.updateUser);
+router.put(
+  '/:id',
+  validate(schemas.idParam, 'params'),
+  validate(schemas.updateUser),
+  user.updateUser
+);
 
 /**
  * @swagger

@@ -70,10 +70,65 @@ exports.getRekap = asyncHandler(async (req, res) => {
   res.json({
     data: result.rows.map((row) => ({
       ...row,
-      persentase_hadir: row.total
-        ? Math.round((Number(row.hadir) / Number(row.total)) * 100)
-        : 0,
+      persentase_hadir: row.total ? Math.round((Number(row.hadir) / Number(row.total)) * 100) : 0,
     })),
     meta: pagination,
   });
+});
+
+const csvEscape = (value) => {
+  const text = value === null || value === undefined ? '' : String(value);
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+exports.exportRekapCsv = asyncHandler(async (req, res) => {
+  const { periode_id, fraksi } = req.validated.query;
+  const result = await query(
+    `SELECT a.id AS anggota_id, u.nama, a.fraksi, a.partai, p.nama AS periode,
+            COUNT(ab.id)::int AS total,
+            COUNT(ab.id) FILTER (WHERE ab.status = 'hadir')::int AS hadir,
+            COUNT(ab.id) FILTER (WHERE ab.status = 'izin')::int AS izin,
+            COUNT(ab.id) FILTER (WHERE ab.status = 'alpha')::int AS alpha
+     FROM anggota_dprd a
+     JOIN users u ON u.id = a.user_id
+     JOIN periode p ON p.id = a.periode_id
+     LEFT JOIN absensi ab ON ab.anggota_id = a.id
+     WHERE ($1::int IS NULL OR a.periode_id = $1)
+       AND ($2::text IS NULL OR a.fraksi = $2)
+     GROUP BY a.id, u.nama, a.fraksi, a.partai, p.nama
+     ORDER BY hadir DESC, u.nama`,
+    [periode_id || null, fraksi || null]
+  );
+  const header = [
+    'anggota_id',
+    'nama',
+    'fraksi',
+    'partai',
+    'periode',
+    'total',
+    'hadir',
+    'izin',
+    'alpha',
+    'persentase_hadir',
+  ];
+  const rows = result.rows.map((row) => {
+    const persentase = row.total ? Math.round((Number(row.hadir) / Number(row.total)) * 100) : 0;
+    return [
+      row.anggota_id,
+      row.nama,
+      row.fraksi,
+      row.partai,
+      row.periode,
+      row.total,
+      row.hadir,
+      row.izin,
+      row.alpha,
+      persentase,
+    ]
+      .map(csvEscape)
+      .join(',');
+  });
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="rekap-absensi.csv"');
+  res.send(`\uFEFF${[header.join(','), ...rows].join('\r\n')}`);
 });

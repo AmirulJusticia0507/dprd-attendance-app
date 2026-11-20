@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portal Absensi DPRD Sleman</title>
+    <link rel="stylesheet" href="/portal/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Portal Absensi DPRD Kabupaten Sleman</h1>
+      <button id="logout" hidden>Keluar</button>
+    </header>
+
+    <main>
+      <section id="login" class="card">
+        <h2>Masuk</h2>
+        <form id="login-form">
+          <label>Email<input id="email" type="email" required autocomplete="username" /></label>
+          <label
+            >Password<input id="password" type="password" required autocomplete="current-password"
+          /></label>
+          <button type="submit">Masuk</button>
+        </form>
+        <p id="login-error" class="error" hidden></p>
+      </section>
+
+      <section id="dashboard" hidden>
+        <div class="toolbar">
+          <div>
+            <h2>Rekap Kehadiran</h2>
+            <p id="user-info" class="muted"></p>
+          </div>
+          <div class="actions">
+            <label
+              >Fraksi
+              <select id="fraksi-filter">
+                <option value="">Semua</option>
+              </select>
+            </label>
+            <button id="export">Unduh CSV</button>
+          </div>
+        </div>
+
+        <div class="card table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nama</th>
+                <th>Fraksi</th>
+                <th>Partai</th>
+                <th>Hadir</th>
+                <th>Izin</th>
+                <th>Alpha</th>
+                <th>Persentase</th>
+              </tr>
+            </thead>
+            <tbody id="rekap-body"></tbody>
+          </table>
+        </div>
+
+        <h2>Absensi Terbaru</h2>
+        <div class="card table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Anggota</th>
+                <th>Rapat</th>
+                <th>Tanggal</th>
+                <th>Status</th>
+                <th>Jam Masuk</th>
+              </tr>
+            </thead>
+            <tbody id="absensi-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="/portal/app.js"></script>
+  </body>
+</html>

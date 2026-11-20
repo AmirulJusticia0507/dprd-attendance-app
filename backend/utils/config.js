@@ -17,5 +17,7 @@ module.exports = {
     .filter(Boolean),
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '8h',
+  jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+  jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   resetTtlMinutes: Number(process.env.RESET_TTL_MINUTES) || 15,
 };

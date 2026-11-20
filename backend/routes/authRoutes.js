@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../controllers/authController');
+const authMiddleware = require('../middlewares/authMiddleware');
 const { validate } = require('../utils/validate');
 const schemas = require('../utils/schemas');
 
@@ -54,10 +55,53 @@ router.post('/signup', validate(schemas.signup), auth.signup);
  *               email: { type: string, format: email }
  *               password: { type: string }
  *     responses:
- *       200: { description: Token JWT beserta data user }
+ *       200: { description: 'Access token, refresh token, dan data user' }
  *       401: { description: Kredensial salah }
  */
 router.post('/login', validate(schemas.login), auth.login);
+
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Perbarui access token dengan refresh token
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [refreshToken]
+ *             properties:
+ *               refreshToken: { type: string }
+ *     responses:
+ *       200: { description: Pasangan token baru }
+ *       401: { description: Refresh token tidak valid }
+ */
+router.post('/refresh', validate(schemas.refresh), auth.refresh);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Cabut refresh token user
+ *     tags: [Auth]
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken: { type: string }
+ *               all: { type: boolean, default: false }
+ *     responses:
+ *       200: { description: Logout berhasil }
+ *       401: { description: Access token tidak valid }
+ */
+router.post('/logout', authMiddleware, validate(schemas.logout), auth.logout);
 
 /**
  * @swagger

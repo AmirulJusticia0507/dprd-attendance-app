@@ -44,6 +44,13 @@ test('GET / returns API info', async () => {
   const response = await request(app).get('/');
   assert.equal(response.status, 200);
   assert.equal(response.body.docs, '/api-docs');
+  assert.equal(response.body.portal, '/portal');
+});
+
+test('GET /portal serves the web portal', async () => {
+  const response = await request(app).get('/portal/');
+  assert.equal(response.status, 200);
+  assert.match(response.text, /Portal Absensi DPRD/);
 });
 
 test('login returns an access token with expiry', async () => {
@@ -131,6 +138,43 @@ test('non-admin cannot create periode', async () => {
     .set('Authorization', `Bearer ${memberToken}`)
     .send({ nama: 'Periode Test', tahun_mulai: 2024, tahun_berakhir: 2029 });
   assert.equal(response.status, 403);
+});
+
+test('refresh token rotates and logout revokes sessions', async () => {
+  const login = await request(app)
+    .post('/api/auth/login')
+    .send({ email: adminEmail, password: testPassword });
+  const firstRefresh = login.body.refreshToken;
+
+  const refreshed = await request(app)
+    .post('/api/auth/refresh')
+    .send({ refreshToken: firstRefresh });
+  assert.equal(refreshed.status, 200);
+  assert.ok(refreshed.body.token);
+
+  const reused = await request(app).post('/api/auth/refresh').send({ refreshToken: firstRefresh });
+  assert.equal(reused.status, 401);
+
+  const secondRefresh = refreshed.body.refreshToken;
+  const loggedOut = await request(app)
+    .post('/api/auth/logout')
+    .set('Authorization', `Bearer ${refreshed.body.token}`)
+    .send({ refreshToken: secondRefresh });
+  assert.equal(loggedOut.status, 200);
+
+  const afterLogout = await request(app)
+    .post('/api/auth/refresh')
+    .send({ refreshToken: secondRefresh });
+  assert.equal(afterLogout.status, 401);
+});
+
+test('rekap CSV export returns downloadable content', async () => {
+  const response = await request(app)
+    .get('/api/absensi/rekap/csv?limit=5')
+    .set('Authorization', `Bearer ${adminToken}`);
+  assert.equal(response.status, 200);
+  assert.match(response.headers['content-type'], /text\/csv/);
+  assert.match(response.text, /anggota_id,nama,fraksi/);
 });
 
 test('unknown route returns 404', async () => {

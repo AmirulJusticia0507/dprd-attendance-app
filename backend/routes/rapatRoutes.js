@@ -94,7 +94,13 @@ router.post('/', restrictTo('admin'), validate(schemas.createRapat), rapatContro
  *       200: { description: Rapat berhasil diperbarui }
  *       404: { description: Rapat tidak ditemukan }
  */
-router.put('/:id', restrictTo('admin'), validate(schemas.idParam, 'params'), validate(schemas.updateRapat), rapatController.updateRapat);
+router.put(
+  '/:id',
+  restrictTo('admin'),
+  validate(schemas.idParam, 'params'),
+  validate(schemas.updateRapat),
+  rapatController.updateRapat
+);
 
 /**
  * @swagger
@@ -109,6 +115,11 @@ router.put('/:id', restrictTo('admin'), validate(schemas.idParam, 'params'), val
  *       200: { description: Rapat berhasil dihapus }
  *       404: { description: Rapat tidak ditemukan }
  */
-router.delete('/:id', restrictTo('admin'), validate(schemas.idParam, 'params'), rapatController.deleteRapat);
+router.delete(
+  '/:id',
+  restrictTo('admin'),
+  validate(schemas.idParam, 'params'),
+  rapatController.deleteRapat
+);
 
 module.exports = router;

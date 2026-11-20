@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reset Password</title>
+    <link rel="stylesheet" href="/portal/styles.css" />
+  </head>
+  <body>
+    <header><h1>Reset Password DPRD Attendance App</h1></header>
+    <main>
+      <section id="reset" class="card" style="max-width: 420px; margin: 60px auto">
+        <h2>Atur Password Baru</h2>
+        <form id="reset-form">
+          <label
+            >Password Baru<input id="new-password" type="password" minlength="8" required
+          /></label>
+          <button type="submit">Simpan</button>
+        </form>
+        <p id="message" hidden></p>
+      </section>
+    </main>
+    <script>
+      const form = document.getElementById('reset-form');
+      const message = document.getElementById('message');
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const token = new URLSearchParams(location.search).get('token') || '';
+        const response = await fetch('/api/auth/reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token,
+            newPassword: document.getElementById('new-password').value,
+          }),
+        });
+        const body = await response.json();
+        message.textContent = body.error || body.message;
+        message.hidden = false;
+        if (response.ok) form.reset();
+      });
+    </script>
+  </body>
+</html>

@@ -68,7 +68,12 @@ router.get('/:id', validate(schemas.idParam, 'params'), periodeController.getPer
  *       400: { description: Input tidak valid }
  *       409: { description: Nama periode sudah ada }
  */
-router.post('/', restrictTo('admin'), validate(schemas.createPeriode), periodeController.createPeriode);
+router.post(
+  '/',
+  restrictTo('admin'),
+  validate(schemas.createPeriode),
+  periodeController.createPeriode
+);
 
 /**
  * @swagger
@@ -92,7 +97,13 @@ router.post('/', restrictTo('admin'), validate(schemas.createPeriode), periodeCo
  *       200: { description: Periode berhasil diperbarui }
  *       404: { description: Periode tidak ditemukan }
  */
-router.put('/:id', restrictTo('admin'), validate(schemas.idParam, 'params'), validate(schemas.updatePeriode), periodeController.updatePeriode);
+router.put(
+  '/:id',
+  restrictTo('admin'),
+  validate(schemas.idParam, 'params'),
+  validate(schemas.updatePeriode),
+  periodeController.updatePeriode
+);
 
 /**
  * @swagger
@@ -108,6 +119,11 @@ router.put('/:id', restrictTo('admin'), validate(schemas.idParam, 'params'), val
  *       400: { description: Periode masih digunakan }
  *       404: { description: Periode tidak ditemukan }
  */
-router.delete('/:id', restrictTo('admin'), validate(schemas.idParam, 'params'), periodeController.deletePeriode);
+router.delete(
+  '/:id',
+  restrictTo('admin'),
+  validate(schemas.idParam, 'params'),
+  periodeController.deletePeriode
+);
 
 module.exports = router;

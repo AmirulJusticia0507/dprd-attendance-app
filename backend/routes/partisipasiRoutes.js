@@ -70,7 +70,12 @@ router.get('/:id', validate(schemas.idParam, 'params'), partisipasiController.ge
  *       201: { description: Partisipasi berhasil dicatat }
  *       400: { description: Input tidak valid }
  */
-router.post('/', restrictTo('admin'), validate(schemas.createPartisipasi), partisipasiController.createPartisipasi);
+router.post(
+  '/',
+  restrictTo('admin'),
+  validate(schemas.createPartisipasi),
+  partisipasiController.createPartisipasi
+);
 
 /**
  * @swagger
@@ -93,7 +98,13 @@ router.post('/', restrictTo('admin'), validate(schemas.createPartisipasi), parti
  *       200: { description: Partisipasi diperbarui }
  *       404: { description: Tidak ditemukan }
  */
-router.put('/:id', restrictTo('admin'), validate(schemas.idParam, 'params'), validate(schemas.updatePartisipasi), partisipasiController.updatePartisipasi);
+router.put(
+  '/:id',
+  restrictTo('admin'),
+  validate(schemas.idParam, 'params'),
+  validate(schemas.updatePartisipasi),
+  partisipasiController.updatePartisipasi
+);
 
 /**
  * @swagger
@@ -108,6 +119,11 @@ router.put('/:id', restrictTo('admin'), validate(schemas.idParam, 'params'), val
  *       200: { description: Partisipasi dihapus }
  *       404: { description: Tidak ditemukan }
  */
-router.delete('/:id', restrictTo('admin'), validate(schemas.idParam, 'params'), partisipasiController.deletePartisipasi);
+router.delete(
+  '/:id',
+  restrictTo('admin'),
+  validate(schemas.idParam, 'params'),
+  partisipasiController.deletePartisipasi
+);
 
 module.exports = router;

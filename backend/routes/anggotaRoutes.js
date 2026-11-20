@@ -102,7 +102,12 @@ router.post('/', validate(schemas.createAnggota), anggotaController.createAnggot
  *       200: { description: Anggota berhasil diperbarui }
  *       404: { description: Anggota tidak ditemukan }
  */
-router.put('/:id', validate(schemas.idParam, 'params'), validate(schemas.updateAnggota), anggotaController.updateAnggota);
+router.put(
+  '/:id',
+  validate(schemas.idParam, 'params'),
+  validate(schemas.updateAnggota),
+  anggotaController.updateAnggota
+);
 
 /**
  * @swagger

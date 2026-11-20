@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -30,6 +31,7 @@ app.use(
   })
 );
 app.use(express.json({ limit: '100kb' }));
+app.use('/portal', express.static(path.join(__dirname, 'public')));
 
 app.use(
   '/api/auth',
@@ -53,7 +55,7 @@ app.get('/api-docs.json', (req, res) => res.json(swaggerSpec));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/', (req, res) => {
-  res.json({ message: 'DPRD Attendance App API', docs: '/api-docs' });
+  res.json({ message: 'DPRD Attendance App API', docs: '/api-docs', portal: '/portal' });
 });
 
 app.use((req, res, next) => {
