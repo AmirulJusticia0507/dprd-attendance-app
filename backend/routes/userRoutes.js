@@ -3,156 +3,98 @@ const router = express.Router();
 const user = require('../controllers/userController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const { restrictTo } = require('../middlewares/roleMiddleware');
+const { validate } = require('../utils/validate');
+const schemas = require('../utils/schemas');
+
+router.use(authMiddleware, restrictTo('admin'));
 
 /**
  * @swagger
  * tags:
  *   name: Users
- *   description: Manajemen pengguna (Admin & Anggota DPRD)
+ *   description: Manajemen pengguna (khusus admin)
  */
 
 /**
  * @swagger
  * /api/users:
  *   get:
- *     summary: Ambil semua pengguna (Admin Only)
+ *     summary: Ambil daftar pengguna (pagination)
  *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Daftar pengguna
- *       403:
- *         description: Akses ditolak (Bukan Admin)
- */
-router.get('/', authMiddleware, restrictTo('admin'), user.getAllUsers);
-
-/**
- * @swagger
- * /api/users/{id}:
- *   get:
- *     summary: Ambil detail pengguna berdasarkan ID
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
+ *       - { in: query, name: page, schema: { type: integer, default: 1 } }
+ *       - { in: query, name: limit, schema: { type: integer, default: 10 } }
  *     responses:
- *       200:
- *         description: Detail pengguna
- *       403:
- *         description: Akses ditolak
- *       404:
- *         description: Pengguna tidak ditemukan
+ *       200: { description: Daftar pengguna }
+ *       401: { description: Belum login }
+ *       403: { description: Bukan admin }
  */
-router.get('/:id', authMiddleware, user.getUserById);
+router.get('/', validate(schemas.pagination, 'query'), user.getAllUsers);
 
 /**
  * @swagger
  * /api/users:
  *   post:
- *     summary: Tambah pengguna baru (Admin atau Registrasi Admin Pertama)
+ *     summary: Tambah pengguna
  *     tags: [Users]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - nama
- *               - email
- *               - password
+ *             required: [nama, email, password]
  *             properties:
- *               nama:
- *                 type: string
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *               role:
- *                 type: string
- *                 enum: [admin, anggota]
+ *               nama: { type: string }
+ *               email: { type: string, format: email }
+ *               password: { type: string, minLength: 8 }
+ *               role: { type: string, enum: [admin, anggota], default: anggota }
  *     responses:
- *       201:
- *         description: Pengguna berhasil ditambahkan
- *       400:
- *         description: Email sudah terdaftar atau input tidak valid
- *       403:
- *         description: Akses ditolak
+ *       201: { description: Pengguna berhasil ditambahkan }
+ *       409: { description: Email sudah terdaftar }
  */
-router.post('/', user.createUser);
+router.post('/', validate(schemas.createUser), user.createUser);
 
 /**
  * @swagger
  * /api/users/{id}:
  *   put:
- *     summary: Update pengguna (Admin Only)
+ *     summary: Perbarui pengguna
  *     tags: [Users]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
  *     requestBody:
- *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
  *             properties:
- *               nama:
- *                 type: string
- *               email:
- *                 type: string
- *               role:
- *                 type: string
- *                 enum: [admin, anggota]
- *               password:
- *                 type: string
+ *               nama: { type: string }
+ *               email: { type: string, format: email }
+ *               role: { type: string, enum: [admin, anggota] }
  *     responses:
- *       200:
- *         description: Pengguna berhasil diperbarui
- *       403:
- *         description: Akses ditolak
- *       404:
- *         description: Pengguna tidak ditemukan
+ *       200: { description: Pengguna berhasil diperbarui }
+ *       404: { description: Pengguna tidak ditemukan }
  */
-router.put('/:id', authMiddleware, restrictTo('admin'), user.updateUser);
+router.put('/:id', validate(schemas.idParam, 'params'), validate(schemas.updateUser), user.updateUser);
 
 /**
  * @swagger
  * /api/users/{id}:
  *   delete:
- *     summary: Hapus pengguna berdasarkan ID (Admin Only)
+ *     summary: Hapus pengguna
  *     tags: [Users]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
  *     responses:
- *       200:
- *         description: Pengguna dihapus
- *       400:
- *         description: Tidak dapat menghapus akun sendiri
- *       403:
- *         description: Akses ditolak
- *       404:
- *         description: Pengguna tidak ditemukan
+ *       200: { description: Pengguna berhasil dihapus }
+ *       400: { description: Admin terakhir tidak dapat dihapus }
+ *       404: { description: Pengguna tidak ditemukan }
  */
-router.delete('/:id', authMiddleware, restrictTo('admin'), user.deleteUser);
+router.delete('/:id', validate(schemas.idParam, 'params'), user.deleteUser);
 
 module.exports = router;

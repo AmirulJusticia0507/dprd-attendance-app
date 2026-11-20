@@ -3,170 +3,75 @@ const router = express.Router();
 const absensi = require('../controllers/absensiController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const { restrictTo } = require('../middlewares/roleMiddleware');
+const { validate } = require('../utils/validate');
+const schemas = require('../utils/schemas');
+
+router.use(authMiddleware);
 
 /**
  * @swagger
  * tags:
  *   name: Absensi
- *   description: Manajemen absensi rapat DPRD
+ *   description: Absensi rapat dan rekap kehadiran
  */
 
 /**
  * @swagger
  * /api/absensi:
  *   get:
- *     summary: Ambil semua data absensi (bisa difilter)
+ *     summary: Ambil daftar absensi dengan filter
  *     tags: [Absensi]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - in: query
- *         name: rapat_id
- *         schema:
- *           type: integer
- *         description: Filter berdasarkan ID rapat
- *       - in: query
- *         name: anggota_id
- *         schema:
- *           type: integer
- *         description: Filter berdasarkan ID anggota DPRD
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *         description: Filter berdasarkan status (hadir, izin, sakit, alpa)
+ *       - { in: query, name: rapat_id, schema: { type: integer } }
+ *       - { in: query, name: anggota_id, schema: { type: integer } }
+ *       - { in: query, name: status, schema: { type: string, enum: [hadir, izin, alpha] } }
+ *       - { in: query, name: page, schema: { type: integer, default: 1 } }
+ *       - { in: query, name: limit, schema: { type: integer, default: 10 } }
  *     responses:
- *       200:
- *         description: Daftar data absensi berhasil diambil
- *       401:
- *         description: Tidak terautentikasi
+ *       200: { description: Daftar absensi }
  */
-router.get('/', authMiddleware, absensi.getAbsensi);
+router.get('/', validate(schemas.absensiFilter, 'query'), absensi.getAbsensi);
 
 /**
  * @swagger
- * /api/absensi/{id}:
+ * /api/absensi/rekap:
  *   get:
- *     summary: Ambil detail absensi berdasarkan ID
+ *     summary: Rekap kehadiran anggota per periode/fraksi
  *     tags: [Absensi]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
+ *       - { in: query, name: periode_id, schema: { type: integer } }
+ *       - { in: query, name: fraksi, schema: { type: string } }
  *     responses:
- *       200:
- *         description: Detail absensi ditemukan
- *       404:
- *         description: Data absensi tidak ditemukan
+ *       200: { description: Rekap kehadiran }
  */
-router.get('/:id', authMiddleware, absensi.getAbsensiById);
+router.get('/rekap', validate(schemas.rekapFilter, 'query'), absensi.getRekap);
 
 /**
  * @swagger
  * /api/absensi:
  *   post:
- *     summary: Catat absensi kehadiran baru
+ *     summary: Tambah absensi anggota untuk suatu rapat
  *     tags: [Absensi]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - rapat_id
+ *             required: [rapat_id, anggota_id, status]
  *             properties:
- *               rapat_id:
- *                 type: integer
- *                 example: 1
- *               anggota_id:
- *                 type: integer
- *                 description: Opsional jika admin mengabsenkan anggota lain. Jika kosong/user role anggota, otomatis menggunakan profil login.
- *                 example: 1
- *               status:
- *                 type: string
- *                 enum: [hadir, izin, sakit, alpa]
- *                 default: hadir
- *               jam_masuk:
- *                 type: string
- *                 example: "09:05:00"
- *               keterangan:
- *                 type: string
- *                 example: "Hadir tepat waktu"
+ *               rapat_id: { type: integer }
+ *               anggota_id: { type: integer }
+ *               status: { type: string, enum: [hadir, izin, alpha] }
+ *               jam_masuk: { type: string, example: "08:15" }
+ *               keterangan: { type: string }
  *     responses:
- *       201:
- *         description: Absensi berhasil dicatat
- *       400:
- *         description: Sudah pernah absen atau input tidak valid
- *       403:
- *         description: Pengguna belum terdaftar sebagai anggota dewan
+ *       201: { description: Absensi ditambahkan }
+ *       409: { description: Absensi untuk rapat dan anggota ini sudah ada }
  */
-router.post('/', authMiddleware, absensi.createAbsensi);
-
-/**
- * @swagger
- * /api/absensi/{id}:
- *   put:
- *     summary: Update status atau keterangan absensi
- *     tags: [Absensi]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               status:
- *                 type: string
- *                 enum: [hadir, izin, sakit, alpa]
- *               jam_masuk:
- *                 type: string
- *               keterangan:
- *                 type: string
- *     responses:
- *       200:
- *         description: Absensi berhasil diperbarui
- *       404:
- *         description: Data absensi tidak ditemukan
- */
-router.put('/:id', authMiddleware, absensi.updateAbsensi);
-
-/**
- * @swagger
- * /api/absensi/{id}:
- *   delete:
- *     summary: Hapus catatan absensi (Admin Only)
- *     tags: [Absensi]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Catatan absensi berhasil dihapus
- *       403:
- *         description: Akses ditolak (Bukan Admin)
- *       404:
- *         description: Data absensi tidak ditemukan
- */
-router.delete('/:id', authMiddleware, restrictTo('admin'), absensi.deleteAbsensi);
+router.post('/', restrictTo('admin', 'anggota'), validate(schemas.createAbsensi), absensi.createAbsensi);
 
 module.exports = router;

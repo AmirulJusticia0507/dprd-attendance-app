@@ -1,119 +1,128 @@
-# DPRD Attendance App — Analisis & Dokumentasi Kesenjangan
+# DPRD Attendance App
 
-> Dokumen ini dibuat 20 November 2026 dari analisis statis seluruh kode sumber. Sebelumnya proyek ini tidak memiliki README maupun dokumentasi setup.
+Backend REST API untuk sistem absensi DPRD Kabupaten Sleman. Proyek awalnya hanya berisi `backend/` tanpa README, test, migrasi, atau dokumentasi setup. Dokumen ini mencatat kondisi awal, perbaikan yang sudah dilakukan, dan sisa pekerjaan.
 
 ## 1. Gambaran umum
 
 | Aspek | Kondisi saat ini |
 | --- | --- |
-| Lingkup | Hanya `backend/`; belum ada frontend, mobile app, atau portal web |
-| Arsitektur | REST API monolitik, Express 5, JavaScript CommonJS |
-| Database | PostgreSQL via `pg.Pool`, query SQL ditulis inline di controller |
-| Autentikasi | JWT stateless (login, forgot/reset password) |
-| Dokumentasi API | Swagger/OpenAPI 3.0 di `/api-docs` |
-| Runtime lokal | Node v22.12.0, npm 10.9.0 (tidak dideklarasikan di `package.json`) |
-| Jumlah file sumber | 17 file JS (5 controller, 5 route, 2 middleware, 2 model, 1 util, 1 swagger, 1 entry point) |
+| Lingkup | Hanya `backend/`; frontend belum ada |
+| Arsitektur | Express 5, JavaScript CommonJS, REST API monolitik |
+| Database | PostgreSQL (`dprd_db`), SQL inline di controller, migrasi + seeder tersedia |
+| Autentikasi | JWT access token ber-expiry, reset password via token sekali pakai di DB |
+| Validasi | Zod untuk body/query/params |
+| Dokumentasi API | Swagger UI `/api-docs`, JSON `/api-docs.json` |
+| Runtime | Node `>=20` (teruji di v22.12.0), npm 10.9.0 |
 
 ## 2. Struktur proyek
 
 ```
 dprd-attendance-app/
+├── README.md
 └── backend/
-    ├── .env                  # Kredensial DB + JWT secret (plaintext)
-    ├── package.json          # Hanya script start & test (placeholder)
-    ├── package-lock.json
-    ├── server.js             # Bootstrap Express, mount route, error handler
-    ├── controllers/          # auth, user, absensi, anggota, rapat
-    ├── middlewares/          # authMiddleware, roleMiddleware
-    ├── models/               # db.js (Pool), queryHelpers.js
-    ├── routes/               # 5 router + anotasi Swagger
-    ├── swagger/swagger.js    # Konfigurasi OpenAPI
-    ├── utils/emailSender.js  # Stub: console.log
-    └── node_modules/
+    ├── .env.example / .gitignore / .eslintrc.json
+    ├── app.js                       # Express app (testable)
+    ├── server.js                    # Start server + graceful shutdown
+    ├── controllers/                 # auth, user, absensi, anggota, rapat
+    ├── database/
+    │   ├── migrate.js
+    │   ├── migrations/001_align_schema.sql
+    │   └── seeds/anggota-2024-2029.js
+    ├── middlewares/                 # auth, role
+    ├── models/                      # db.js (Pool), queryHelpers.js
+    ├── routes/                      # 5 router + anotasi Swagger
+    ├── swagger/swagger.js
+    ├── tests/api.test.js
+    └── utils/                       # config, AppError, validate, schemas, emailSender, dll.
 ```
 
-Tidak ada folder `tests/`, `docs/`, `database/`, `migrations/`, `seeders/`, `.github/`, dan tidak ada `Dockerfile`, `docker-compose.yml`, `.gitignore`, atau `.env.example`.
-
-## 3. Cara menjalankan (kondisi saat ini)
+## 3. Instalasi & menjalankan
 
 ```bash
 cd backend
 npm install
-# Siapkan PostgreSQL dan database "dprd_db" secara manual
-# Buat file .env sendiri (tidak ada template)
-npm start
+cp .env.example .env
+# isi kredensial PostgreSQL, JWT_SECRET, dan ALLOWED_ORIGINS
+npm run db:setup     # migrasi + seed 50 anggota DPRD 2024-2029
+npm start            # atau: npm run dev
 ```
 
-Server: `http://localhost:5000` · Swagger: `http://localhost:5000/api-docs`
+Server: `http://localhost:5000` · Swagger: `http://localhost:5000/api-docs` · OpenAPI JSON: `http://localhost:5000/api-docs.json`
 
-Script `npm test` **selalu gagal** karena masih placeholder (`backend/package.json:6`). Tidak ada script `dev`, `lint`, `build`, `migrate`, atau `seed`.
+Script lain: `npm run migrate`, `npm run seed`, `npm run lint`, `npm test`.
 
-## 4. Endpoint yang tersedia
+## 4. Data anggota DPRD 2024-2029
+
+Sumber: [halaman resmi DPRD Kabupaten Sleman](https://dprd.slemankab.go.id/anggota-dprd-2019-2024/) dan PDF SK Gubernur DIY No. 306/KEP/2024.
+
+- **50 anggota** sudah diinsert ke `users` + `anggota_dprd` pada periode `2024-2029`.
+- Komposisi fraksi: PKB 7, Gerindra 6, PDI Perjuangan 13, Golkar 6, PPP NasDem 6, PKS 6, PAN 6.
+- Tersimpan juga `partai`, `fraksi`, `jabatan_fraksi`, `jabatan`, dan `dapil`.
+- Email dibuat otomatis dari nama, mis. `wawan.prasetia@dprd.slemankab.go.id`.
+- Password awal: `Sleman2024!` (bisa diubah lewat `SEED_DEFAULT_PASSWORD`). **Ganti password ini sebelum dipakai publik.**
+- Seed bersifat idempotent: `ON CONFLICT` pada email dan `(user_id, periode_id)`.
+
+Pimpinan: Ketua `Y. Gustan Ganda, S.T.`; Wakil I `Ani Martanti, S.T.`; Wakil II `Hasto Karyantoro, S.I.P.`; Wakil III `H. R Sukaptana, S.H.`
+
+## 5. Endpoint utama
 
 | Grup | Endpoint | Proteksi |
 | --- | --- | --- |
-| Auth | `POST /api/auth/login`, `/forgot`, `/reset` | Publik |
-| Users | `GET/POST /api/users`, `PUT/DELETE /api/users/:id` | JWT saja |
-| Absensi | `GET/POST /api/absensi` | JWT saja |
-| Anggota | `GET/POST /api/anggota`, `GET/PUT/DELETE /api/anggota/:id` | JWT + role `admin` |
-| Rapat | `GET/POST /api/rapat`, `GET/PUT/DELETE /api/rapat/:id` | JWT saja |
-| Lain | `GET /`, `GET /api-docs` | Publik |
+| Auth | `POST /api/auth/signup`, `/login`, `/forgot`, `/reset` | Publik |
+| Users | `GET/POST /api/users`, `PUT/DELETE /api/users/:id` | JWT + admin |
+| Anggota | `GET/POST /api/anggota`, `GET/PUT/DELETE /api/anggota/:id` | JWT + admin |
+| Rapat | `GET/POST /api/rapat`, `GET/PUT/DELETE /api/rapat/:id` | JWT (mutasi: admin) |
+| Absensi | `GET/POST /api/absensi`, `GET /api/absensi/rekap` | JWT |
+| Sistem | `GET /`, `GET /api-docs`, `GET /api-docs.json` | Publik |
 
-Fungsi `signup` sudah ditulis di `backend/controllers/authController.js:6` tetapi **tidak dipasang** sebagai route di `backend/routes/authRoutes.js:34-80`.
+Semua endpoint list mendukung `page` dan `limit`; anggota bisa difilter dengan `fraksi`, `periode_id`, `aktif`; absensi dengan `rapat_id`, `anggota_id`, `status`.
 
-## 5. Fitur yang sudah ada
+## 6. Kesenjangan awal & status perbaikannya
 
-Login + hash bcrypt, reset password (simulasi email), CRUD user, CRUD anggota DPRD dengan JOIN `users`/`periode`, CRUD rapat, list & tambah absensi, middleware JWT dan role admin, Swagger UI, error handler global 500.
-
-Schema yang **hanya bisa ditebak dari query**: `users`, `absensi`, `rapat`, `anggota_dprd`, `periode`; role: `admin`, `anggota`.
-
-## 6. Kesenjangan dalam proyek
-
-### Prioritas kritis
-
-| # | Kekurangan | Bukti |
+| # | Kesenjangan awal | Status |
 | --- | --- | --- |
-| 1 | Kredensial DB dan `JWT_SECRET` tersimpan plaintext di `.env`, dan tidak ada `.gitignore` untuk mencegahnya masuk ke VCS | `backend/.env:1-6` |
-| 2 | Token reset password dicetak ke console (debug artefak) | `backend/controllers/authController.js:35` |
-| 3 | Token login JWT tidak memiliki masa berlaku (`expiresIn`) | `backend/controllers/authController.js:25` |
-| 4 | CRUD user hanya pakai JWT, tanpa pembatasan role → user biasa bisa membuat/update user menjadi `admin` (privilege escalation) | `backend/routes/userRoutes.js:25,60,94,114`, `backend/controllers/userController.js:29-32` |
-| 5 | Pengecekan token di `createUser` hanya mengecek keberadaan header, tidak memverifikasi token | `backend/controllers/userController.js:18-27` |
-| 6 | `forgotPassword` tidak punya `try/catch`, selalu membalas sukses, dan tidak mengecek keberadaan email; `resetPassword` tidak mengecek `rowCount` | `backend/controllers/authController.js:32-51` |
-| 7 | Email reset hanya `console.log`; URL hardcode `localhost:5000` | `backend/utils/emailSender.js:1-3` |
+| 1 | Secret plaintext tanpa `.gitignore` | `.gitignore` + `.env.example` ditambahkan; secret tetap perlu dirotasi sebelum produksi |
+| 2 | Token reset dicetak ke console | Token acak 32 byte disimpan sebagai SHA-256 di `password_resets`, tidak ada logging token |
+| 3 | JWT tanpa expiry | `expiresIn` (`JWT_EXPIRES_IN`, default `8h`) + `type: 'access'` |
+| 4 | CRUD user tanpa role guard | `restrictTo('admin')` di semua route user |
+| 5 | Cek token palsu di `createUser` | Dihapus; verifikasi terpusat di `authMiddleware` |
+| 6 | `forgotPassword`/`resetPassword` tidak aman | Generic response, token expiry, hash token, `rowCount` dicek, transaksi DB |
+| 7 | Email reset hanya `console.log` | Nodemailer + `SMTP_*`; jika belum dikonfigurasi, endpoint mengembalikan `503` |
+| 8 | Tanpa schema/migrasi/seeder | `database/migrations` + `database/seeds`, `npm run db:setup` |
+| 9 | Tanpa validasi input | Zod + `validate()` pada semua route |
+| 10 | `npm test` placeholder | 9 test otomatis (Node test runner + Supertest) |
+| 11 | Tanpa lint/env example | ESLint, `.env.example`, script `dev`/`migrate`/`seed` |
+| 12 | Error membocorkan `err.message` | `AppError` + error handler terpusat; 500 generik |
+| 13 | CORS terbuka, tanpa helmet/rate limit | `ALLOWED_ORIGINS`, Helmet, rate limit `/api/auth` |
+| 14 | Absensi tidak terhubung rapat/anggota, tanpa rekap | Sesuai schema DB: `rapat_id`, `anggota_id`, `status`, `jam_masuk`, `keterangan`; unique `(rapat_id, anggota_id)` + endpoint rekap |
+| 15 | Tanpa logout/refresh/revoke | **Belum** — JWT masih stateless |
+| 16 | Swagger `nama_rapat` vs `judul` | Diselaraskan ke schema DB (`judul`, `tempat`) |
+| 17 | 403 untuk "no token" | 401 |
+| 18 | `roleMiddleware` tidak defensif | Cek `req.user` dulu |
+| 19 | `dotenv.config()` dobel | Satu kali di `utils/config.js` |
+| 20 | Path Swagger bergantung CWD | `path.join(__dirname, ...)` |
+| 21 | Tanpa pagination/filter | Ditambahkan di semua list |
+| 22 | Duplikat email & hapus admin terakhir | 409 untuk duplikat; guard admin terakhir & self-delete |
+| 23 | Tidak ada 404 handler | 404 terpusat |
+| 24 | `bcrypt` tidak terpakai, `engines` kosong | Dependency dihapus, `engines: >=20` |
+| 25 | Tanpa graceful shutdown | `SIGINT`/`SIGTERM` menutup server & pool |
+| 26 | Artefak debug/emoji/bahasa campur | Dibersihkan |
 
-### Prioritas tinggi
+Perbaikan tambahan: transaksi DB untuk update/reset password, audit `logs`, proteksi FK/unique, `npm audit` 0 vulnerability, dan Swagger JSON yang bisa diunduh.
 
-| # | Kekurangan | Bukti |
-| --- | --- | --- |
-| 8 | Tidak ada schema SQL, migrasi, seeder, atau ORM — database mustahil direproduksi di mesin lain | seluruh proyek (tidak ada `*.sql`) |
-| 9 | Tidak ada validasi input sama sekuali (body, email, password, enum role, param `id`) | `backend/package.json:13-23`, `backend/controllers/*.js` |
-| 10 | Tidak ada test; cakupan 0% | `backend/package.json:6` |
-| 11 | Tidak ada lint, typecheck, formatter, Docker, CI/CD, atau `.env.example` | `backend/package.json:5-8` |
-| 12 | Error 500 membocorkan `err.message` (detail SQL/internal) ke klien | hampir semua controller, mis. `backend/controllers/authController.js:13,28` |
-| 13 | CORS terbuka untuk semua origin, tanpa `helmet`, rate limiting, atau proteksi brute-force | `backend/server.js:22` |
-| 14 | Absensi tidak memiliki `rapat_id`, tidak ada validasi `status_kehadiran`, pencegahan duplikat, rekap, statistik, atau laporan kehadiran | `backend/controllers/absensiController.js:3-20` |
-| 15 | Tidak ada endpoint logout, refresh token, atau revocation | `backend/controllers/authController.js`, `backend/middlewares/authMiddleware.js` |
+## 7. Sisa pekerjaan
 
-### Prioritas sedang / perbaikan kualitas
+1. **Frontend/portal** untuk login, absensi, dan rekap kehadiran.
+2. **Konfigurasi SMTP nyata** agar `POST /api/auth/forgot` bisa mengirim email (sekarang sengaja `503` jika belum ada SMTP).
+3. **Rotasi kredensial** `.env` dan password seed sebelum dipakai di lingkungan publik.
+4. **Logout/refresh token/revocation** jika diperlukan (mis. simpan session di Redis).
+5. **Docker/CI/CD**, typecheck/TypeScript, formatter, dan test integrasi terhadap database sementara.
+6. Fitur lanjutan: check-in/out, QR/geolocation, notifikasi, upload, dan laporan ekspor.
 
-| # | Kekurangan | Bukti |
-| --- | --- | --- |
-| 16 | Swagger mendokumentasikan `nama_rapat`, controller mengharapkan `judul` → request sesuai docs menyimpan NULL | `backend/routes/rapatRoutes.js:62,95` vs `backend/controllers/rapatController.js:29,32` |
-| 17 | `authMiddleware` mengembalikan 403 untuk "no token" (semestinya 401) | `backend/middlewares/authMiddleware.js:5,8` |
-| 18 | `roleMiddleware` mengakses `req.user.role` tanpa pengecekan `req.user` | `backend/middlewares/roleMiddleware.js:3` |
-| 19 | `dotenv.config()` dipanggil dua kali | `backend/server.js:9`, `backend/models/db.js:3` |
-| 20 | Path Swagger `./routes/*.js` bergantung pada CWD | `backend/swagger/swagger.js:34` |
-| 21 | Semua endpoint list tanpa pagination/filter | `backend/controllers/{user,absensi,rapat,anggota}Controller.js` |
-| 22 | Email duplikat tidak dicek; `deleteUser` bisa menghapus admin/akun terakhir | `backend/controllers/userController.js:29-32,54-61` |
-| 23 | Tidak ada handler 404 untuk route yang tidak ditemukan; error handler global selalu 500 | `backend/server.js:38-42` |
-| 24 | Dependensi `bcrypt` tidak dipakai (kode memakai `bcryptjs`); `engines` tidak dideklarasikan | `backend/package.json:14-15`, `backend/controllers/authController.js:2` |
-| 25 | Tidak ada graceful shutdown untuk `pg.Pool` | `backend/models/db.js:5-13`, `backend/server.js:45-49` |
-| 26 | Artefak development masih tertinggal (komentar debug, emoji log, bahasa campur) | `backend/controllers/authController.js:35`, `backend/server.js:47-48` |
+## 8. Verifikasi terakhir
 
-## 7. Rekomendasi urutan kerja
-
-1. **Amankan dulu:** `.gitignore` + `.env.example`, rotasi secret, hapus logging token, beri `expiresIn` pada JWT, pasang `restrictTo('admin')` pada semua route user.
-2. **Buat database reproducible:** migrasi SQL + seeder untuk `users`, `rapat`, `absensi`, `anggota_dprd`, `periode` (termasuk FK dan constraint).
-3. **Rapikan kontrak API:** validasi request (mis. Zod/Joi), samakan `nama_rapat` ↔ `judul`, perbaiki status code, sentralisasi error response.
-4. **Lengkapi fitur inti absensi:** relasi `rapat_id`, status kehadiran terdefinisi, pencegahan duplikat, rekap per anggota/rapat/periode.
-5. **Tingkatkan kualitas:** test (Supertest + Jest), ESLint/Prettier, CI, Dockerfile + compose, pagination, logging dan graceful shutdown.
+- `npm run db:setup` → migrasi sukses, 50 anggota tersimpan.
+- `npm run lint` → 0 error.
+- `npm test` → 9/9 lulus.
+- `npm audit --omit=dev` → 0 vulnerability.
+- Smoke test: `GET /`, login anggota, `GET /api/absensi/rekap`, dan Swagger JSON semuanya `200`.

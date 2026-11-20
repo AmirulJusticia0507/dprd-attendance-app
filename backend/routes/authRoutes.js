@@ -1,21 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../controllers/authController');
-const authMiddleware = require('../middlewares/authMiddleware');
+const { validate } = require('../utils/validate');
+const schemas = require('../utils/schemas');
 
 /**
  * @swagger
  * tags:
  *   name: Auth
- *   description: Autentikasi dan profil pengguna
+ *   description: Autentikasi dan pengelolaan password
  */
 
 /**
  * @swagger
- * /api/auth/register:
+ * /api/auth/signup:
  *   post:
- *     summary: Registrasi anggota baru
+ *     summary: Daftar akun anggota baru
  *     tags: [Auth]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -24,26 +26,23 @@ const authMiddleware = require('../middlewares/authMiddleware');
  *             type: object
  *             required: [nama, email, password]
  *             properties:
- *               nama:
- *                 type: string
- *               email:
- *                 type: string
- *               password:
- *                 type: string
+ *               nama: { type: string }
+ *               email: { type: string, format: email }
+ *               password: { type: string, minLength: 8 }
  *     responses:
- *       201:
- *         description: Registrasi berhasil
- *       400:
- *         description: Email sudah terdaftar atau input tidak valid
+ *       201: { description: Akun berhasil dibuat }
+ *       400: { description: Validasi gagal }
+ *       409: { description: Email sudah terdaftar }
  */
-router.post('/register', auth.signup);
+router.post('/signup', validate(schemas.signup), auth.signup);
 
 /**
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Login pengguna
+ *     summary: Login dan dapatkan JWT
  *     tags: [Auth]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -52,40 +51,21 @@ router.post('/register', auth.signup);
  *             type: object
  *             required: [email, password]
  *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
+ *               email: { type: string, format: email }
+ *               password: { type: string }
  *     responses:
- *       200:
- *         description: Login berhasil, mengembalikan token JWT dan data user
- *       401:
- *         description: Kredensial tidak valid
+ *       200: { description: Token JWT beserta data user }
+ *       401: { description: Kredensial salah }
  */
-router.post('/login', auth.login);
-
-/**
- * @swagger
- * /api/auth/me:
- *   get:
- *     summary: Ambil profil pengguna yang sedang login
- *     tags: [Auth]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Informasi profil pengguna
- *       401:
- *         description: Tidak terautentikasi
- */
-router.get('/me', authMiddleware, auth.getProfile);
+router.post('/login', validate(schemas.login), auth.login);
 
 /**
  * @swagger
  * /api/auth/forgot:
  *   post:
- *     summary: Kirim tautan reset kata sandi ke email
+ *     summary: Kirim tautan reset password via email
  *     tags: [Auth]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -94,20 +74,20 @@ router.get('/me', authMiddleware, auth.getProfile);
  *             type: object
  *             required: [email]
  *             properties:
- *               email:
- *                 type: string
+ *               email: { type: string, format: email }
  *     responses:
- *       200:
- *         description: Respon reset diproses
+ *       200: { description: Tautan dikirim jika email terdaftar }
+ *       503: { description: SMTP belum dikonfigurasi }
  */
-router.post('/forgot', auth.forgotPassword);
+router.post('/forgot', validate(schemas.forgot), auth.forgotPassword);
 
 /**
  * @swagger
  * /api/auth/reset:
  *   post:
- *     summary: Reset kata sandi menggunakan token
+ *     summary: Reset password dengan token
  *     tags: [Auth]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -116,16 +96,12 @@ router.post('/forgot', auth.forgotPassword);
  *             type: object
  *             required: [token, newPassword]
  *             properties:
- *               token:
- *                 type: string
- *               newPassword:
- *                 type: string
+ *               token: { type: string }
+ *               newPassword: { type: string, minLength: 8 }
  *     responses:
- *       200:
- *         description: Kata sandi berhasil diperbarui
- *       400:
- *         description: Token tidak valid atau kedaluwarsa
+ *       200: { description: Password berhasil diperbarui }
+ *       400: { description: Token tidak valid atau kedaluwarsa }
  */
-router.post('/reset', auth.resetPassword);
+router.post('/reset', validate(schemas.reset), auth.resetPassword);
 
 module.exports = router;

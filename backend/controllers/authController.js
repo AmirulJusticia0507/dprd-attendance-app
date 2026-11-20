@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { query } = require('../models/queryHelpers');
+const { query, withTransaction } = require('../models/queryHelpers');
 const { sendResetEmail } = require('../utils/emailSender');
 const asyncHandler = require('../utils/asyncHandler');
 const { conflict, badRequest, unauthorized } = require('../utils/AppError');
@@ -74,15 +74,16 @@ exports.resetPassword = asyncHandler(async (req, res) => {
   if (result.rowCount === 0) throw badRequest('Token reset tidak valid atau kedaluwarsa');
   const userId = result.rows[0].user_id;
   const hashed = await bcrypt.hash(newPassword, 10);
-  await query('BEGIN');
-  try {
-    await query('UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2', [hashed, userId]);
-    await query('DELETE FROM password_resets WHERE user_id = $1', [userId]);
-    await query('INSERT INTO logs (user_id, action) VALUES ($1, $2)', [userId, 'reset_password']);
-    await query('COMMIT');
-  } catch (err) {
-    await query('ROLLBACK');
-    throw err;
-  }
+  await withTransaction(async (client) => {
+    await client.query('UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2', [
+      hashed,
+      userId,
+    ]);
+    await client.query('DELETE FROM password_resets WHERE user_id = $1', [userId]);
+    await client.query('INSERT INTO logs (user_id, action) VALUES ($1, $2)', [
+      userId,
+      'reset_password',
+    ]);
+  });
   res.json({ message: 'Password berhasil diperbarui' });
 });

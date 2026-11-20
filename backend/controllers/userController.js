@@ -1,161 +1,77 @@
-const { query } = require('../models/queryHelpers');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const { query, withTransaction } = require('../models/queryHelpers');
+const asyncHandler = require('../utils/asyncHandler');
+const getPagination = require('../utils/pagination');
+const { badRequest, conflict, forbidden, notFound } = require('../utils/AppError');
 
-// GET all users (Admin only)
-exports.getAllUsers = async (req, res) => {
+exports.getAllUsers = asyncHandler(async (req, res) => {
+  const pagination = getPagination(req.validated.query);
+  const result = await query(
+    'SELECT id, nama, email, role, created_at FROM users ORDER BY id LIMIT $1 OFFSET $2',
+    [pagination.limit, pagination.offset]
+  );
+  const count = await query('SELECT COUNT(*)::int AS total FROM users');
+  res.json({ data: result.rows, meta: { ...pagination, total: count.rows[0].total } });
+});
+
+exports.createUser = asyncHandler(async (req, res) => {
+  const { nama, email, password, role } = req.body;
+  const hashed = await bcrypt.hash(password, 10);
   try {
     const result = await query(
-      'SELECT id, nama, email, role, created_at, updated_at FROM users ORDER BY id ASC'
+      'INSERT INTO users (nama, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, nama, email, role',
+      [nama, email, hashed, role]
     );
-    res.json(result.rows);
+    await query('INSERT INTO logs (user_id, action) VALUES ($1, $2)', [
+      req.user.id,
+      `create_user:${result.rows[0].id}`,
+    ]);
+    res.status(201).json({ message: 'User berhasil ditambahkan', data: result.rows[0] });
   } catch (err) {
-    console.error('Error in getAllUsers:', err);
-    res.status(500).json({ error: 'Gagal mengambil daftar pengguna' });
+    if (err.code === '23505') throw conflict('Email sudah terdaftar');
+    throw err;
   }
-};
+});
 
-// GET user by ID
-exports.getUserById = async (req, res) => {
-  const { id } = req.params;
+exports.updateUser = asyncHandler(async (req, res) => {
+  const { id } = req.validated.params;
+  const { nama, email, role } = req.body;
+  if (!nama && !email && !role) throw badRequest('Minimal satu field harus diisi');
 
-  // Non-admin hanya boleh melihat profilnya sendiri
-  if (req.user.role !== 'admin' && req.user.id !== parseInt(id)) {
-    return res.status(403).json({ error: 'Akses ditolak' });
-  }
-
-  try {
-    const result = await query(
-      'SELECT id, nama, email, role, created_at, updated_at FROM users WHERE id = $1',
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Pengguna tidak ditemukan' });
+  const result = await withTransaction(async (client) => {
+    const target = await client.query('SELECT id, role FROM users WHERE id = $1 FOR UPDATE', [id]);
+    if (target.rowCount === 0) throw notFound('User tidak ditemukan');
+    if (target.rows[0].role === 'admin' && role === 'anggota') {
+      const admins = await client.query("SELECT COUNT(*)::int AS total FROM users WHERE role = 'admin'");
+      if (admins.rows[0].total <= 1) throw badRequest('Tidak dapat menurunkan admin terakhir');
     }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error in getUserById:', err);
-    res.status(500).json({ error: 'Gagal mengambil detail pengguna' });
-  }
-};
-
-// CREATE user (Admin or Initial Bootstrap)
-exports.createUser = async (req, res) => {
-  const { nama, email, password, role = 'anggota' } = req.body;
-
-  if (!nama || !email || !password) {
-    return res.status(400).json({ error: 'Nama, email, dan password wajib diisi' });
-  }
-
-  try {
-    const adminCheck = await query("SELECT id FROM users WHERE role = 'admin'");
-    const hasAdmin = adminCheck.rowCount > 0;
-
-    // Jika sudah ada admin di database, wajib otentikasi admin
-    if (hasAdmin) {
-      const authHeader = req.headers.authorization;
-      if (!authHeader) return res.status(401).json({ error: 'Memerlukan token otentikasi' });
-
-      const token = authHeader.split(' ')[1];
-      if (!token) return res.status(401).json({ error: 'Token tidak valid' });
-
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (decoded.role !== 'admin') {
-          return res.status(403).json({ error: 'Hanya admin yang dapat menambahkan pengguna' });
-        }
-      } catch (tokenErr) {
-        return res.status(401).json({ error: 'Token kedaluwarsa atau tidak valid' });
-      }
+    try {
+      return await client.query(
+        'UPDATE users SET nama = COALESCE($1, nama), email = COALESCE($2, email), role = COALESCE($3, role), updated_at = NOW() WHERE id = $4 RETURNING id, nama, email, role',
+        [nama || null, email || null, role || null, id]
+      );
+    } catch (err) {
+      if (err.code === '23505') throw conflict('Email sudah terdaftar');
+      throw err;
     }
+  });
 
-    // Cek apakah email sudah terdaftar
-    const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
-    if (existing.rowCount > 0) {
-      return res.status(400).json({ error: 'Email sudah terdaftar' });
+  res.json({ message: 'User berhasil diperbarui', data: result.rows[0] });
+});
+
+exports.deleteUser = asyncHandler(async (req, res) => {
+  const { id } = req.validated.params;
+  if (Number(id) === Number(req.user.id)) throw forbidden('Tidak dapat menghapus akun sendiri');
+
+  await withTransaction(async (client) => {
+    const target = await client.query('SELECT id, role FROM users WHERE id = $1 FOR UPDATE', [id]);
+    if (target.rowCount === 0) throw notFound('User tidak ditemukan');
+    if (target.rows[0].role === 'admin') {
+      const admins = await client.query("SELECT COUNT(*)::int AS total FROM users WHERE role = 'admin'");
+      if (admins.rows[0].total <= 1) throw badRequest('Tidak dapat menghapus admin terakhir');
     }
+    await client.query('DELETE FROM users WHERE id = $1', [id]);
+  });
 
-    const hashed = await bcrypt.hash(password, 10);
-    const assignedRole = hasAdmin ? role : 'admin'; // User pertama otomatis admin
-
-    const insertResult = await query(
-      'INSERT INTO users(nama, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, nama, email, role, created_at',
-      [nama, email, hashed, assignedRole]
-    );
-
-    res.status(201).json({
-      message: hasAdmin ? 'Pengguna berhasil ditambahkan' : 'Admin pertama berhasil dibuat',
-      user: insertResult.rows[0],
-    });
-  } catch (err) {
-    console.error('Error in createUser:', err);
-    res.status(500).json({ error: 'Gagal membuat pengguna' });
-  }
-};
-
-// UPDATE user (Admin only)
-exports.updateUser = async (req, res) => {
-  const { id } = req.params;
-  const { nama, email, role, password } = req.body;
-
-  try {
-    let queryText;
-    let queryParams;
-
-    if (password) {
-      const hashed = await bcrypt.hash(password, 10);
-      queryText = `UPDATE users 
-                   SET nama = COALESCE($1, nama), 
-                       email = COALESCE($2, email), 
-                       role = COALESCE($3, role), 
-                       password = $4,
-                       updated_at = NOW() 
-                   WHERE id = $5 
-                   RETURNING id, nama, email, role, updated_at`;
-      queryParams = [nama, email, role, hashed, id];
-    } else {
-      queryText = `UPDATE users 
-                   SET nama = COALESCE($1, nama), 
-                       email = COALESCE($2, email), 
-                       role = COALESCE($3, role), 
-                       updated_at = NOW() 
-                   WHERE id = $4 
-                   RETURNING id, nama, email, role, updated_at`;
-      queryParams = [nama, email, role, id];
-    }
-
-    const result = await query(queryText, queryParams);
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Pengguna tidak ditemukan' });
-    }
-
-    res.json({ message: 'Pengguna berhasil diperbarui', user: result.rows[0] });
-  } catch (err) {
-    console.error('Error in updateUser:', err);
-    res.status(500).json({ error: 'Gagal memperbarui pengguna' });
-  }
-};
-
-// DELETE user (Admin only)
-exports.deleteUser = async (req, res) => {
-  const { id } = req.params;
-
-  if (req.user && req.user.id === parseInt(id)) {
-    return res.status(400).json({ error: 'Anda tidak dapat menghapus akun Anda sendiri' });
-  }
-
-  try {
-    const result = await query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Pengguna tidak ditemukan' });
-    }
-
-    res.json({ message: 'Pengguna berhasil dihapus' });
-  } catch (err) {
-    console.error('Error in deleteUser:', err);
-    res.status(500).json({ error: 'Gagal menghapus pengguna' });
-  }
-};
+  res.json({ message: 'User berhasil dihapus' });
+});

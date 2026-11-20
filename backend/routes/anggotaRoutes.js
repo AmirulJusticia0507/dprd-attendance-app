@@ -3,143 +3,120 @@ const router = express.Router();
 const anggotaController = require('../controllers/anggotaController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const { restrictTo } = require('../middlewares/roleMiddleware');
+const { validate } = require('../utils/validate');
+const schemas = require('../utils/schemas');
+
+router.use(authMiddleware, restrictTo('admin'));
 
 /**
  * @swagger
  * tags:
  *   name: Anggota
- *   description: API untuk manajemen anggota DPRD
+ *   description: Manajemen anggota DPRD (khusus admin)
  */
 
 /**
  * @swagger
  * /api/anggota:
  *   get:
- *     summary: Ambil semua anggota DPRD
+ *     summary: Ambil daftar anggota DPRD
  *     tags: [Anggota]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: query, name: fraksi, schema: { type: string } }
+ *       - { in: query, name: periode_id, schema: { type: integer } }
+ *       - { in: query, name: aktif, schema: { type: boolean } }
+ *       - { in: query, name: page, schema: { type: integer, default: 1 } }
+ *       - { in: query, name: limit, schema: { type: integer, default: 10 } }
  *     responses:
- *       200:
- *         description: Daftar anggota berhasil diambil
+ *       200: { description: Daftar anggota }
  */
-router.get('/', authMiddleware, restrictTo('admin'), anggotaController.getAllAnggota);
+router.get('/', validate(schemas.paginationWithFilter, 'query'), anggotaController.getAllAnggota);
 
 /**
  * @swagger
  * /api/anggota/{id}:
  *   get:
- *     summary: Ambil detail anggota DPRD berdasarkan ID
+ *     summary: Detail anggota DPRD
  *     tags: [Anggota]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         schema:
- *           type: integer
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
  *     responses:
- *       200:
- *         description: Detail anggota ditemukan
- *       404:
- *         description: Anggota tidak ditemukan
+ *       200: { description: Detail anggota }
+ *       404: { description: Anggota tidak ditemukan }
  */
-router.get('/:id', authMiddleware, restrictTo('admin'), anggotaController.getAnggotaById);
+router.get('/:id', validate(schemas.idParam, 'params'), anggotaController.getAnggotaById);
 
 /**
  * @swagger
  * /api/anggota:
  *   post:
- *     summary: Tambah anggota DPRD baru
+ *     summary: Tambah anggota DPRD
  *     tags: [Anggota]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [user_id, periode_id, fraksi, jabatan, dapil]
+ *             required: [user_id, periode_id, fraksi]
  *             properties:
- *               user_id:
- *                 type: integer
- *               periode_id:
- *                 type: integer
- *               fraksi:
- *                 type: string
- *               jabatan:
- *                 type: string
- *               dapil:
- *                 type: string
- *               aktif:
- *                 type: boolean
+ *               user_id: { type: integer }
+ *               periode_id: { type: integer }
+ *               fraksi: { type: string }
+ *               partai: { type: string }
+ *               jabatan_fraksi: { type: string }
+ *               jabatan: { type: string }
+ *               dapil: { type: string }
+ *               aktif: { type: boolean, default: true }
  *     responses:
- *       201:
- *         description: Anggota berhasil ditambahkan
+ *       201: { description: Anggota berhasil ditambahkan }
+ *       409: { description: Anggota sudah terdaftar pada periode ini }
  */
-router.post('/', authMiddleware, restrictTo('admin'), anggotaController.createAnggota);
+router.post('/', validate(schemas.createAnggota), anggotaController.createAnggota);
 
 /**
  * @swagger
  * /api/anggota/{id}:
  *   put:
- *     summary: Update data anggota DPRD
+ *     summary: Perbarui anggota DPRD
  *     tags: [Anggota]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         schema:
- *           type: integer
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
  *     requestBody:
- *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
  *             properties:
- *               user_id:
- *                 type: integer
- *               periode_id:
- *                 type: integer
- *               fraksi:
- *                 type: string
- *               jabatan:
- *                 type: string
- *               dapil:
- *                 type: string
- *               aktif:
- *                 type: boolean
+ *               fraksi: { type: string }
+ *               partai: { type: string }
+ *               jabatan_fraksi: { type: string }
+ *               jabatan: { type: string }
+ *               dapil: { type: string }
+ *               aktif: { type: boolean }
  *     responses:
- *       200:
- *         description: Data anggota berhasil diupdate
+ *       200: { description: Anggota berhasil diperbarui }
+ *       404: { description: Anggota tidak ditemukan }
  */
-router.put('/:id', authMiddleware, restrictTo('admin'), anggotaController.updateAnggota);
+router.put('/:id', validate(schemas.idParam, 'params'), validate(schemas.updateAnggota), anggotaController.updateAnggota);
 
 /**
  * @swagger
  * /api/anggota/{id}:
  *   delete:
- *     summary: Hapus anggota DPRD berdasarkan ID
+ *     summary: Hapus anggota DPRD
  *     tags: [Anggota]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - name: id
- *         in: path
- *         required: true
- *         schema:
- *           type: integer
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
  *     responses:
- *       200:
- *         description: Anggota berhasil dihapus
- *       404:
- *         description: Anggota tidak ditemukan
+ *       200: { description: Anggota berhasil dihapus }
+ *       404: { description: Anggota tidak ditemukan }
  */
-router.delete('/:id', authMiddleware, restrictTo('admin'), anggotaController.deleteAnggota);
+router.delete('/:id', validate(schemas.idParam, 'params'), anggotaController.deleteAnggota);
 
 module.exports = router;

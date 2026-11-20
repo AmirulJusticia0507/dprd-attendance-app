@@ -1,17 +1,20 @@
 const jwt = require('jsonwebtoken');
+const { unauthorized } = require('../utils/AppError');
+const { jwtSecret } = require('../utils/config');
 
 module.exports = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(403).json({ error: 'No token' });
-
-  const token = authHeader.split(' ')[1];
-  if (!token) return res.status(403).json({ error: 'No token provided' });
-
+  const [scheme, token] = (req.headers.authorization || '').split(' ');
+  if (scheme !== 'Bearer' || !token) {
+    return next(unauthorized('Token bearer tidak ditemukan'));
+  }
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, jwtSecret);
+    if (decoded.type !== 'access') {
+      return next(unauthorized('Jenis token tidak valid'));
+    }
     req.user = decoded;
     next();
   } catch (err) {
-    res.status(401).json({ error: 'Invalid token' });
+    next(unauthorized('Token tidak valid atau sudah kedaluwarsa'));
   }
 };

@@ -1,8 +1,7 @@
-module.exports.restrictTo = (...allowedRoles) => {
-  return (req, res, next) => {
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Akses ditolak' });
-    }
-    next();
-  };
+const { forbidden, unauthorized } = require('../utils/AppError');
+
+module.exports.restrictTo = (...roles) => (req, res, next) => {
+  if (!req.user) return next(unauthorized());
+  if (!roles.includes(req.user.role)) return next(forbidden());
+  next();
 };

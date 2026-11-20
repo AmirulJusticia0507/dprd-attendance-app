@@ -3,6 +3,10 @@ const router = express.Router();
 const rapatController = require('../controllers/rapatController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const { restrictTo } = require('../middlewares/roleMiddleware');
+const { validate } = require('../utils/validate');
+const schemas = require('../utils/schemas');
+
+router.use(authMiddleware);
 
 /**
  * @swagger
@@ -15,148 +19,96 @@ const { restrictTo } = require('../middlewares/roleMiddleware');
  * @swagger
  * /api/rapat:
  *   get:
- *     summary: Ambil semua rapat
+ *     summary: Ambil daftar rapat
  *     tags: [Rapat]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: query, name: page, schema: { type: integer, default: 1 } }
+ *       - { in: query, name: limit, schema: { type: integer, default: 10 } }
  *     responses:
- *       200:
- *         description: Daftar rapat
- *       401:
- *         description: Tidak terautentikasi
+ *       200: { description: Daftar rapat }
  */
-router.get('/', authMiddleware, rapatController.getAllRapat);
+router.get('/', validate(schemas.pagination, 'query'), rapatController.getAllRapat);
 
 /**
  * @swagger
  * /api/rapat/{id}:
  *   get:
- *     summary: Ambil detail rapat
+ *     summary: Detail rapat
  *     tags: [Rapat]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
  *     responses:
- *       200:
- *         description: Detail rapat
- *       404:
- *         description: Rapat tidak ditemukan
+ *       200: { description: Detail rapat }
+ *       404: { description: Rapat tidak ditemukan }
  */
-router.get('/:id', authMiddleware, rapatController.getRapatById);
+router.get('/:id', validate(schemas.idParam, 'params'), rapatController.getRapatById);
 
 /**
  * @swagger
  * /api/rapat:
  *   post:
- *     summary: Tambah rapat baru (Admin Only)
+ *     summary: Tambah rapat
  *     tags: [Rapat]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - judul
- *               - tanggal
+ *             required: [judul, tanggal]
  *             properties:
- *               judul:
- *                 type: string
- *                 example: Rapat Paripurna Penetapan APBD
- *               tanggal:
- *                 type: string
- *                 format: date
- *                 example: "2026-11-20"
- *               waktu_mulai:
- *                 type: string
- *                 example: "09:00:00"
- *               waktu_selesai:
- *                 type: string
- *                 example: "12:00:00"
- *               tempat:
- *                 type: string
- *                 example: Ruang Sidang Paripurna Lantai 3
+ *               judul: { type: string }
+ *               tanggal: { type: string, format: date }
+ *               waktu_mulai: { type: string, example: "09:00" }
+ *               waktu_selesai: { type: string, example: "11:00" }
+ *               tempat: { type: string }
  *     responses:
- *       201:
- *         description: Rapat berhasil ditambahkan
- *       400:
- *         description: Input tidak valid
- *       403:
- *         description: Akses ditolak (Bukan Admin)
+ *       201: { description: Rapat berhasil ditambahkan }
  */
-router.post('/', authMiddleware, restrictTo('admin'), rapatController.createRapat);
+router.post('/', restrictTo('admin'), validate(schemas.createRapat), rapatController.createRapat);
 
 /**
  * @swagger
  * /api/rapat/{id}:
  *   put:
- *     summary: Update rapat (Admin Only)
+ *     summary: Perbarui rapat
  *     tags: [Rapat]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: integer
- *         required: true
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
  *     requestBody:
- *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
  *             properties:
- *               judul:
- *                 type: string
- *               tanggal:
- *                 type: string
- *                 format: date
- *               waktu_mulai:
- *                 type: string
- *               waktu_selesai:
- *                 type: string
- *               tempat:
- *                 type: string
+ *               judul: { type: string }
+ *               tanggal: { type: string, format: date }
+ *               waktu_mulai: { type: string }
+ *               waktu_selesai: { type: string }
+ *               tempat: { type: string }
  *     responses:
- *       200:
- *         description: Rapat diperbarui
- *       403:
- *         description: Akses ditolak (Bukan Admin)
- *       404:
- *         description: Rapat tidak ditemukan
+ *       200: { description: Rapat berhasil diperbarui }
+ *       404: { description: Rapat tidak ditemukan }
  */
-router.put('/:id', authMiddleware, restrictTo('admin'), rapatController.updateRapat);
+router.put('/:id', restrictTo('admin'), validate(schemas.idParam, 'params'), validate(schemas.updateRapat), rapatController.updateRapat);
 
 /**
  * @swagger
  * /api/rapat/{id}:
  *   delete:
- *     summary: Hapus rapat (Admin Only)
+ *     summary: Hapus rapat
  *     tags: [Rapat]
- *     security:
- *       - bearerAuth: []
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: integer
- *         required: true
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
  *     responses:
- *       200:
- *         description: Rapat dihapus
- *       403:
- *         description: Akses ditolak (Bukan Admin)
- *       404:
- *         description: Rapat tidak ditemukan
+ *       200: { description: Rapat berhasil dihapus }
+ *       404: { description: Rapat tidak ditemukan }
  */
-router.delete('/:id', authMiddleware, restrictTo('admin'), rapatController.deleteRapat);
+router.delete('/:id', restrictTo('admin'), validate(schemas.idParam, 'params'), rapatController.deleteRapat);
 
 module.exports = router;
