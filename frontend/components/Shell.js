@@ -5,13 +5,22 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { apiFetch, clearSession, getSession } from '../lib/api';
 
-const links = [
+const adminLinks = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/absensi', label: 'Absensi' },
   { href: '/rapat', label: 'Rapat' },
   { href: '/rekap', label: 'Rekap' },
   { href: '/anggota', label: 'Anggota' },
 ];
+
+const anggotaLinks = [
+  { href: '/dashboard', label: 'Dashboard Saya' },
+  { href: '/scan', label: 'Scan QR' },
+  { href: '/riwayat', label: 'Riwayat Saya' },
+];
+
+const adminOnlyPaths = ['/absensi', '/rapat', '/rekap', '/anggota'];
+const anggotaOnlyPaths = ['/riwayat'];
 
 export default function Shell({ children }) {
   const pathname = usePathname();
@@ -23,11 +32,18 @@ export default function Shell({ children }) {
 
   useEffect(() => {
     const current = getSession();
+    const role = current?.user?.role;
     setSession(current);
     setReady(true);
     if (pathname === '/scan') return;
     if (pathname === '/' && current) router.replace('/dashboard');
     if (pathname !== '/' && !current) router.replace('/');
+    if (role === 'admin' && anggotaOnlyPaths.some((path) => pathname.startsWith(path))) {
+      router.replace('/dashboard');
+    }
+    if (role === 'anggota' && adminOnlyPaths.some((path) => pathname.startsWith(path))) {
+      router.replace('/dashboard');
+    }
   }, [pathname, router]);
 
   useEffect(() => {
@@ -72,6 +88,9 @@ export default function Shell({ children }) {
     return <main className="scan-page">{children}</main>;
   if (!ready || !session) return <div className="loading">Memuat sesi...</div>;
 
+  const role = session.user?.role;
+  const links = role === 'anggota' ? anggotaLinks : adminLinks;
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -104,7 +123,9 @@ export default function Shell({ children }) {
       <div className="main-area">
         <header className="topbar">
           <span className="clock">{clock}</span>
-          <span className="user-chip">{session.user?.nama || 'Pengguna'}</span>
+          <span className="user-chip">
+            {session.user?.nama || 'Pengguna'} · {role}
+          </span>
         </header>
         <main className="content">{children}</main>
       </div>

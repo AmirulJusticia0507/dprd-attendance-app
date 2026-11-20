@@ -17,6 +17,7 @@ const rapatRoutes = require('./routes/rapatRoutes');
 const periodeRoutes = require('./routes/periodeRoutes');
 const partisipasiRoutes = require('./routes/partisipasiRoutes');
 const healthRoutes = require('./routes/healthRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use('/api/rapat', rapatRoutes);
 app.use('/api/periode', periodeRoutes);
 app.use('/api/partisipasi', partisipasiRoutes);
 app.use('/api/health', healthRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.get('/api-docs.json', (req, res) => res.json(swaggerSpec));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 

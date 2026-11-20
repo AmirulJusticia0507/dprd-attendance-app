@@ -8,7 +8,7 @@ Backend REST API, portal web ringan, dan frontend PWA Next.js untuk sistem absen
 | --------------- | ----------------------------------------------------------------------------------------------- |
 | Lingkup         | Backend API, portal statis `/portal`, frontend PWA Next.js                                      |
 | Arsitektur      | Express 5, JavaScript CommonJS, REST API monolitik                                              |
-| Database        | PostgreSQL (`dprd_db`), migrasi SQL + seeder, 20 test (unit + integrasi)                        |
+| Database        | PostgreSQL (`dprd_db`), migrasi SQL + seeder, 21 test (unit + integrasi)                        |
 | Autentikasi     | Access token + refresh token berputar, logout/revocation, reset password via token sekali pakai |
 | Validasi        | Zod untuk body/query/params                                                                     |
 | Dokumentasi API | Swagger UI `/api-docs`, JSON `/api-docs.json`                                                   |
@@ -23,7 +23,7 @@ dprd-attendance-app/
 ├── docker-compose.yml
 ├── .github/workflows/ci.yml
 ├── frontend/
-│   ├── app/                      # login, dashboard, absensi, rapat, rekap, anggota, /scan
+│   ├── app/                      # login, dashboard admin/anggota, absensi, rapat, rekap, riwayat, /scan
 │   ├── components/               # Shell, DataTable, Pagination, PwaRegister, AbsensiQrCard
 │   ├── lib/                      # apiFetch + session localStorage
 │   ├── public/                   # manifest.json, sw.js, ikon PWA
@@ -110,6 +110,8 @@ Pimpinan: Ketua `Y. Gustan Ganda, S.T.`; Wakil I `Ani Martanti, S.T.`; Wakil II 
 | Rapat       | `POST /api/rapat/:id/absensi-qr`, `/absensi-qr/shared`                            | JWT + admin                           |
 | Absensi QR  | `POST /api/absensi/check-in`                                                      | Publik, QR token pribadi sekali pakai |
 | Absensi QR  | `POST /api/absensi/check-in-rapat`                                                | JWT + anggota, QR rapat bersama       |
+| Dashboard   | `GET /api/dashboard/admin`                                                        | JWT + admin                           |
+| Dashboard   | `GET /api/dashboard/anggota`, `GET /api/absensi/saya`                             | JWT + anggota                         |
 | Sistem      | `GET /`, `GET /api/health`, `GET /api-docs`, `GET /api-docs.json`, `GET /portal/` | Publik                                |
 
 Semua endpoint list mendukung `page` dan `limit`; anggota bisa difilter dengan `fraksi`, `periode_id`, `aktif`; absensi dengan `rapat_id`, `anggota_id`, `status`; rekap dengan `periode_id`, `fraksi`.
@@ -121,6 +123,11 @@ Semua endpoint list mendukung `page` dan `limit`; anggota bisa difilter dengan `
 - QR rapat hanya mengenali **rapat**; identitas pembaca diambil dari JWT akun yang sedang masuk. Backend mencari `anggota_dprd` aktif milik `req.user.id`, lalu menulis absensi `hadir` + `jam_masuk` WIB. Admin tidak bisa memakai endpoint check-in anggota.
 - Mode lama `DPRD-ABSEN:<token>` tetap didukung: QR personal per anggota, public check-in, SHA-256, sekali pakai. Mode ini hanya mengenali **pemilik QR**, bukan orang yang memegang HP.
 - Token disimpan sebagai SHA-256 dan berlaku `QR_TTL_MINUTES` (default 60 menit). QR lama otomatis diganti saat dibuat ulang. Kamera memerlukan `localhost` atau HTTPS.
+
+### Dashboard per role
+
+- **Admin**: statistik keseluruhan, komposisi fraksi, rekap teratas, dan absensi terbaru seluruh anggota.
+- **Anggota**: sapaan profil, statistik pribadi, rapat mendatang, riwayat kehadiran sendiri, dan shortcut scan. Menu admin disembunyikan dan route admin diblokir untuk role `anggota`, begitu juga sebaliknya.
 
 ## 6. Kesenjangan awal & status perbaikannya
 
@@ -135,7 +142,7 @@ Semua endpoint list mendukung `page` dan `limit`; anggota bisa difilter dengan `
 | 7   | Email reset hanya `console.log`             | Nodemailer + `SMTP_*`; butuh kredensial SMTP nyata               |
 | 8   | Tanpa schema/migrasi/seeder                 | 5 file migrasi + seeder, `npm run db:setup`                      |
 | 9   | Tanpa validasi input                        | Zod + `validate()` pada semua route                              |
-| 10  | `npm test` placeholder                      | 20 test: Supertest + integrasi DB sementara                      |
+| 10  | `npm test` placeholder                      | 21 test: Supertest + integrasi DB sementara                      |
 | 11  | Tanpa lint/env example                      | ESLint + Prettier + TypeScript check + `.env.example`            |
 | 12  | Error membocorkan detail internal           | `AppError` + error handler terpusat                              |
 | 13  | CORS terbuka, tanpa helmet/rate limit       | `ALLOWED_ORIGINS`, Helmet, rate limit `/api/auth`                |
@@ -165,6 +172,6 @@ Perbaikan tambahan: portal web `/portal`, halaman reset `/portal/reset.html`, fr
 
 - `npm run db:setup` dan migrasi fresh DB → sukses, 50 anggota tersimpan.
 - `npm run lint` → 0 error; `npm run format:check` → bersih; `npm run typecheck` → 0 error.
-- `npm test` → 20/20 lulus (termasuk refresh token, CSV, portal, QR sekali pakai, check-in berbasis akun, dan DB sementara).
+- `npm test` → 21/21 lulus (termasuk refresh token, CSV, portal, QR sekali pakai, check-in berbasis akun, dashboard per role, dan DB sementara).
 - `npm audit --omit=dev` → 0 vulnerability; `npm run build` frontend → sukses, termasuk route `/scan`.
 - Smoke API: `/`, `/api/health`, `/portal/`, login, rekap, Swagger JSON semuanya `200`.

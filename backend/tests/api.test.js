@@ -273,6 +273,37 @@ test('QR rapat mencatat identitas dari akun anggota yang scan', async () => {
   assert.equal(replay.status, 409);
 });
 
+test('dashboard dan riwayat dibedakan berdasarkan role', async () => {
+  const adminToAnggota = await request(app)
+    .get('/api/dashboard/anggota')
+    .set('Authorization', `Bearer ${adminToken}`);
+  assert.equal(adminToAnggota.status, 403);
+
+  const anggotaToAdmin = await request(app)
+    .get('/api/dashboard/admin')
+    .set('Authorization', `Bearer ${memberToken}`);
+  assert.equal(anggotaToAdmin.status, 403);
+
+  const anggota = await request(app)
+    .get('/api/dashboard/anggota')
+    .set('Authorization', `Bearer ${memberToken}`);
+  assert.equal(anggota.status, 200);
+  assert.equal(anggota.body.data.profil.nama, 'Test Anggota');
+  assert.ok(anggota.body.data.statistik);
+
+  const admin = await request(app)
+    .get('/api/dashboard/admin')
+    .set('Authorization', `Bearer ${adminToken}`);
+  assert.equal(admin.status, 200);
+  assert.ok(admin.body.data.statistik.total_anggota > 0);
+
+  const riwayat = await request(app)
+    .get('/api/absensi/saya?limit=5')
+    .set('Authorization', `Bearer ${memberToken}`);
+  assert.equal(riwayat.status, 200);
+  assert.ok(Array.isArray(riwayat.body.data));
+});
+
 test('unknown route returns 404', async () => {
   const response = await request(app).get('/api/tidak-ada');
   assert.equal(response.status, 404);
