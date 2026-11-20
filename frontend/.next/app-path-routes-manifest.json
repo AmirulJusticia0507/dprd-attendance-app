@@ -1,0 +1,10 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/absensi/page": "/absensi",
+  "/anggota/page": "/anggota",
+  "/dashboard/page": "/dashboard",
+  "/page": "/",
+  "/rapat/page": "/rapat",
+  "/rekap/page": "/rekap"
+}
