@@ -19,6 +19,7 @@ export default function Shell({ children }) {
   const [session, setSession] = useState(null);
   const [ready, setReady] = useState(false);
   const [clock, setClock] = useState('');
+  const [canInstall, setCanInstall] = useState(false);
 
   useEffect(() => {
     const current = getSession();
@@ -32,6 +33,28 @@ export default function Shell({ children }) {
     const timer = setInterval(() => setClock(new Date().toLocaleTimeString('id-ID')), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const checkInstallable = () => {
+      if (typeof window !== 'undefined' && window.__pwaInstallPrompt) {
+        setCanInstall(true);
+      }
+    };
+    checkInstallable();
+    const interval = setInterval(checkInstallable, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleInstall = async () => {
+    if (typeof window !== 'undefined' && window.__pwaInstallPrompt) {
+      window.__pwaInstallPrompt.prompt();
+      const { outcome } = await window.__pwaInstallPrompt.userChoice;
+      if (outcome === 'accepted') {
+        window.__pwaInstallPrompt = null;
+        setCanInstall(false);
+      }
+    }
+  };
 
   const logout = async () => {
     if (session?.refreshToken) {
@@ -65,9 +88,16 @@ export default function Shell({ children }) {
             </Link>
           ))}
         </nav>
-        <button type="button" className="btn btn-danger sidebar-logout" onClick={logout}>
-          Keluar
-        </button>
+        <div className="sidebar-footer">
+          {canInstall && (
+            <button type="button" className="btn btn-pwa-install" onClick={handleInstall}>
+              📲 Install App (PWA)
+            </button>
+          )}
+          <button type="button" className="btn btn-danger sidebar-logout" onClick={logout}>
+            Keluar
+          </button>
+        </div>
       </aside>
       <div className="main-area">
         <header className="topbar">
