@@ -46,7 +46,7 @@
     {
       "name": "Scan QR Presensi",
       "short_name": "Scan QR",
-      "description": "Presensi anggota dewan hanya dengan scan QR",
+      "description": "Masuk sebagai anggota lalu scan QR rapat",
       "url": "/scan",
       "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     },

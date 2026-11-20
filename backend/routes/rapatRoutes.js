@@ -53,6 +53,13 @@ router.post(
   absensiQrController.generateQrTokens
 );
 
+router.post(
+  '/:id/absensi-qr/shared',
+  restrictTo('admin'),
+  validate(schemas.idParam, 'params'),
+  absensiQrController.generateRapatQr
+);
+
 /**
  * @swagger
  * /api/rapat:

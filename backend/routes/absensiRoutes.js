@@ -1,12 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const absensi = require('../controllers/absensiController');
+const absensiQr = require('../controllers/absensiQrController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const { restrictTo } = require('../middlewares/roleMiddleware');
 const { validate } = require('../utils/validate');
 const schemas = require('../utils/schemas');
 
 router.use(authMiddleware);
+
+router.post(
+  '/check-in-rapat',
+  restrictTo('anggota'),
+  validate(schemas.checkInQr),
+  absensiQr.checkInWithRapatQr
+);
 
 /**
  * @swagger

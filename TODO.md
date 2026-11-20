@@ -21,11 +21,12 @@
 - [x] Halaman reset password `/portal/reset.html`.
 - [x] Rotasi `JWT_SECRET`, `JWT_REFRESH_SECRET`, dan password seed di `backend/.env` (lokal).
 - [x] Dockerfile, `docker-compose.yml`, GitHub Actions CI, Prettier, dan TypeScript `checkJs`.
-- [x] Verifikasi akhir: lint/format/typecheck 0 error, 19/19 test lulus, audit 0 vulnerability.
+- [x] Verifikasi akhir: lint/format/typecheck 0 error, 20/20 test lulus, audit 0 vulnerability.
 - [x] Frontend PWA Next.js: login, dashboard, absensi, rapat, rekap, anggota, install prompt, service worker.
 - [x] CI job frontend (`npm ci` + `npm run build`) dan `.gitignore` artifact `.next`.
-- [x] Halaman `/scan` untuk anggota: tanpa login, kamera QR, auto check-in.
-- [x] Presensi QR: token pribadi, SHA-256, TTL, sekali pakai, rate limit, generator admin-only.
+- [x] Halaman `/scan` untuk anggota: login sekali, sesi tersimpan, kamera QR, auto check-in.
+- [x] Mode QR rapat bersama: identitas pembaca diambil dari JWT anggota, bukan dari QR.
+- [x] Presensi QR personal lama tetap didukung: token SHA-256, TTL, sekali pakai, rate limit.
 - [x] Akun admin lokal: `amirulputra0507@gmail.com`; password tersimpan di `backend/.env`.
 
 ## Belum

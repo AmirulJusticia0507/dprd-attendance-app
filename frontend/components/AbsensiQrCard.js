@@ -5,39 +5,35 @@ import QRCode from 'qrcode';
 import { apiFetch, readError } from '../lib/api';
 
 export default function AbsensiQrCard({ rapat, onClose }) {
-  const [tokens, setTokens] = useState([]);
+  const [qrPayload, setQrPayload] = useState('');
+  const [qrImage, setQrImage] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
-  const [images, setImages] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (tokens.length === 0) return;
+    if (!qrPayload) return;
     let active = true;
-    Promise.all(
-      tokens.map(async (item) => [
-        item.token,
-        await QRCode.toDataURL(item.qrPayload, { width: 240, margin: 1 }),
-      ])
-    ).then((entries) => {
-      if (active) setImages(Object.fromEntries(entries));
+    QRCode.toDataURL(qrPayload, { width: 320, margin: 2 }).then((url) => {
+      if (active) setQrImage(url);
     });
     return () => {
       active = false;
     };
-  }, [tokens]);
+  }, [qrPayload]);
 
   const generate = async () => {
     setLoading(true);
     setError('');
+    setQrImage('');
     try {
-      const response = await apiFetch(`/api/rapat/${rapat.id}/absensi-qr`, {
+      const response = await apiFetch(`/api/rapat/${rapat.id}/absensi-qr/shared`, {
         method: 'POST',
         body: JSON.stringify({}),
       });
       if (!response.ok) throw new Error(await readError(response, 'Gagal membuat QR'));
       const body = await response.json();
-      setTokens(body.data.tokens);
+      setQrPayload(body.data.qrPayload);
       setExpiresAt(body.data.expires_at);
     } catch (err) {
       setError(err.message);
@@ -50,9 +46,10 @@ export default function AbsensiQrCard({ rapat, onClose }) {
     <section className="qr-panel">
       <header className="qr-panel-header">
         <div>
-          <h2>QR Absensi · {rapat.judul}</h2>
+          <h2>QR Rapat · {rapat.judul}</h2>
           <p className="muted">
-            QR bersifat pribadi, sekali pakai, dan otomatis men-deteksi anggota.
+            Anggota masuk dengan akunnya sekali, lalu cukup scan QR ini. Identitas yang tercatat
+            berasal dari akun yang sedang masuk.
           </p>
         </div>
         <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
@@ -61,7 +58,7 @@ export default function AbsensiQrCard({ rapat, onClose }) {
       </header>
 
       <button type="button" className="btn btn-primary" onClick={generate} disabled={loading}>
-        {loading ? 'Membuat QR...' : tokens.length ? 'Buat ulang QR' : 'Buat QR Anggota'}
+        {loading ? 'Membuat QR...' : qrPayload ? 'Buat ulang QR' : 'Buat QR Rapat'}
       </button>
 
       {error && <p className="error-text">{error}</p>}
@@ -69,19 +66,18 @@ export default function AbsensiQrCard({ rapat, onClose }) {
         <p className="muted">Berlaku sampai {new Date(expiresAt).toLocaleString('id-ID')} WIB.</p>
       )}
 
-      <div className="qr-grid">
-        {tokens.map((item) => (
-          <article className="qr-item" key={item.token}>
-            {images[item.token] ? (
-              <img src={images[item.token]} alt={`QR ${item.nama}`} />
-            ) : (
-              <div className="qr-placeholder" />
-            )}
-            <strong>{item.nama}</strong>
-            <span className="muted">{item.fraksi}</span>
-          </article>
-        ))}
-      </div>
+      {qrPayload && (
+        <div className="qr-shared">
+          {qrImage ? (
+            <img src={qrImage} alt={`QR rapat ${rapat.judul}`} />
+          ) : (
+            <div className="qr-placeholder" />
+          )}
+          <p className="muted">
+            Tampilkan QR ini di layar. Setiap anggota scan dengan PWA masing-masing.
+          </p>
+        </div>
+      )}
     </section>
   );
 }

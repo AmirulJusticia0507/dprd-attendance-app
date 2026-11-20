@@ -15,6 +15,7 @@ let memberToken;
 let testAnggotaId;
 let testPeriodeId;
 let qrRapatId;
+let sharedRapatId;
 
 before(async () => {
   const hash = await bcrypt.hash(testPassword, 10);
@@ -57,6 +58,7 @@ before(async () => {
 
 after(async () => {
   if (qrRapatId) await pool.query('DELETE FROM rapat WHERE id = $1', [qrRapatId]);
+  if (sharedRapatId) await pool.query('DELETE FROM rapat WHERE id = $1', [sharedRapatId]);
   if (testPeriodeId) await pool.query('DELETE FROM periode WHERE id = $1', [testPeriodeId]);
   await pool.query('DELETE FROM users WHERE email IN ($1, $2)', [adminEmail, memberEmail]);
   await pool.end();
@@ -232,6 +234,42 @@ test('QR absensi generation is admin-only and check-in is single use', async () 
   assert.equal(checkIn.body.data.anggota.id, testAnggotaId);
 
   const replay = await request(app).post('/api/absensi/check-in').send({ token: item.qrPayload });
+  assert.equal(replay.status, 409);
+});
+
+test('QR rapat mencatat identitas dari akun anggota yang scan', async () => {
+  const rapat = await request(app)
+    .post('/api/rapat')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ judul: 'Rapat QR Akun Test', tanggal: '2030-02-20' });
+  assert.equal(rapat.status, 201);
+  sharedRapatId = rapat.body.data.id;
+
+  const generated = await request(app)
+    .post(`/api/rapat/${sharedRapatId}/absensi-qr/shared`)
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({});
+  assert.equal(generated.status, 201);
+  assert.ok(generated.body.data.qrPayload.startsWith('DPRD-RAPAT:'));
+
+  const asAdmin = await request(app)
+    .post('/api/absensi/check-in-rapat')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ token: generated.body.data.qrPayload });
+  assert.equal(asAdmin.status, 403);
+
+  const checkIn = await request(app)
+    .post('/api/absensi/check-in-rapat')
+    .set('Authorization', `Bearer ${memberToken}`)
+    .send({ token: generated.body.data.qrPayload });
+  assert.equal(checkIn.status, 200);
+  assert.equal(checkIn.body.data.anggota.id, testAnggotaId);
+  assert.equal(checkIn.body.data.anggota.nama, 'Test Anggota');
+
+  const replay = await request(app)
+    .post('/api/absensi/check-in-rapat')
+    .set('Authorization', `Bearer ${memberToken}`)
+    .send({ token: generated.body.data.qrPayload });
   assert.equal(replay.status, 409);
 });
 

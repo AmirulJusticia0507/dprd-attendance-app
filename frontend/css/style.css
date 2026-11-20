@@ -590,6 +590,25 @@ tbody tr:hover {
   margin: 4px 0 0;
 }
 
+.scan-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.scan-user small {
+  color: var(--primary-hover);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
 .qr-reader {
   width: 100%;
   min-height: 300px;
@@ -701,4 +720,26 @@ tbody tr:hover {
   height: 140px;
   background: #e2e8f0;
   border-radius: 8px;
+}
+
+.qr-shared {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 12px;
+}
+
+.qr-shared img {
+  width: 240px;
+  height: 240px;
+}
+
+.qr-shared .muted {
+  max-width: 320px;
+  color: #475569;
+  text-align: center;
 }
