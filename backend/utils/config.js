@@ -1,7 +1,11 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
-const required = ['DB_USER', 'DB_PASSWORD', 'DB_HOST', 'DB_PORT', 'DB_NAME', 'JWT_SECRET'];
+const hasDbUrl = Boolean(process.env.DATABASE_URL);
+const required = hasDbUrl
+  ? ['DATABASE_URL', 'JWT_SECRET']
+  : ['DB_USER', 'DB_PASSWORD', 'DB_HOST', 'DB_PORT', 'DB_NAME', 'JWT_SECRET'];
+
 const missing = required.filter((key) => !process.env[key]);
 
 if (missing.length > 0) {
